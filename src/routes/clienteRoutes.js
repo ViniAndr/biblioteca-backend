@@ -10,6 +10,7 @@ import * as clienteController from "../controllers/clienteController.js";
 router.post("/cadastro-completo", clienteController.cadastroOnline);
 
 // cadastro simples, ou seja, o presencial feito pelo funcionario
+router.post("/cadastro-simples", clienteController.cadastroPresencial);
 
 // login do cliente
 
