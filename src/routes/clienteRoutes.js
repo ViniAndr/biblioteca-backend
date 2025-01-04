@@ -1,10 +1,13 @@
 import { Router } from "express";
 const router = Router();
 
+import * as clienteController from "../controllers/clienteController.js";
+
 /* verifica se o CLIENTE já tem o cadastro simples e atualiza adicionando o email e senha,
    caso não tenha, ele fará um cadastro completo. */
 
 // cadastro completo, ou seja, o online feito pelo cliente.
+router.post("/cadastro-completo", clienteController.cadastroOnline);
 
 // cadastro simples, ou seja, o presencial feito pelo funcionario
 
