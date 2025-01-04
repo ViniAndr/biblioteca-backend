@@ -11,15 +11,12 @@ export const cadastroOnline = async (req, res) => {
     });
   } catch (error) {
     // Resposta de erro personalizada
-    if (
-      error.message === "Já existe um usuário com esse email." ||
-      error.message === "Já existe um usuário com esse telefone."
-    ) {
-      return res.status(400).json({ error: error.message });
-    } else {
-      console.error(error);
+    if (error.statusCode != 500) {
+      return res.status(error.statusCode).json({ error: error.message });
     }
 
+    // log do erro
+    console.log(error);
     // Erro genérico
     return res.status(500).json({
       error: "Ocorreu um erro, tente novamente mais tarde.",
@@ -38,12 +35,12 @@ export const cadastroPresencial = async (req, res) => {
     });
   } catch (error) {
     // Resposta de erro personalizada
-    if (error.message === "Já existe um usuário com esse telefone.") {
-      return res.status(400).json({ error: error.message });
-    } else {
-      console.error(error); // Log para debug
+    if (error.statusCode != 500) {
+      return res.status(error.statusCode).json({ error: error.message });
     }
 
+    // log do erro
+    console.log(error);
     // Erro genérico
     return res.status(500).json({
       error: "Ocorreu um erro, tente novamente mais tarde.",
@@ -60,15 +57,13 @@ export const login = async (req, res) => {
       cliente: loginCliente,
     });
   } catch (error) {
-    if (
-      error.message === "Email e senha são obrigatórios para fazer login." ||
-      error.message === "Credencial invalida."
-    ) {
-      return res.status(404).json({ error: error.message });
-    } else {
-      console.error(error); // Log para debug
+    // Resposta de erro personalizada
+    if (error.statusCode != 500) {
+      return res.status(error.statusCode).json({ error: error.message });
     }
 
+    // log do erro
+    console.log(error);
     // Erro genérico
     return res.status(500).json({
       error: "Ocorreu um erro, tente novamente mais tarde.",

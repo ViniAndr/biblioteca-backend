@@ -4,19 +4,20 @@ const prisma = new PrismaClient();
 // utils
 import hashSenha from "../utils/hashSenha.js";
 import { autenticarUsuario } from "./UsuariosService.js";
+import AppError from "../utils/AppError.js";
 
 // método para cadastrar cliente, abordar o cadastro completo(online) e simples(presencial)
 export const cadastrarCliente = async (dadosCliente, isCadastroCompleto = false) => {
   if (isCadastroCompleto) {
     // Valida email e senha para cadastro completo
     if (!dadosCliente.email || !dadosCliente.senha) {
-      throw new Error("Email e senha são obrigatórios para cadastro completo.");
+      throw new AppError("Email e senha são obrigatórios para cadastro completo.", 400);
     }
 
     // Verifica se o e-mail já existe
     const emailExiste = await prisma.cliente.findUnique({ where: { email: dadosCliente.email } });
     if (emailExiste) {
-      throw new Error("Já existe um usuário com esse email.");
+      throw new AppError("Já existe um usuário com esse email.", 409);
     }
 
     // Criptografa a senha
@@ -26,7 +27,7 @@ export const cadastrarCliente = async (dadosCliente, isCadastroCompleto = false)
   // Verifica se o telefone já existe (em ambos os casos)
   const telefoneExiste = await prisma.cliente.findUnique({ where: { telefone: dadosCliente.telefone } });
   if (telefoneExiste) {
-    throw new Error("Já existe um usuário com esse telefone.");
+    throw new AppError("Já existe um usuário com esse telefone.", 409);
   }
 
   // Cria o novo cliente
@@ -40,11 +41,11 @@ export const cadastrarCliente = async (dadosCliente, isCadastroCompleto = false)
 // login
 export const login = async (dadosLogin) => {
   if (!dadosLogin.email || !dadosLogin.senha) {
-    throw new Error("Email e senha são obrigatórios para fazer login.");
+    throw new AppError("Email e senha são obrigatórios para fazer login.", 400);
   }
 
   const loginCliente = await autenticarUsuario(dadosLogin, "cliente");
-  if (!loginCliente) throw new Error("Credencial invalida.");
+  if (!loginCliente) throw new AppError("Credencial invalida.", 404);
 
   return loginCliente;
 };
