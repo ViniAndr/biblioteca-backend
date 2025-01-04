@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+// utils
+import hashSenha from "../utils/hashSenha.js";
+
 export const cadastroCompleto = async (dadosCliente) => {
   // Verifica se o e-mail já existe
   const emailExiste = await prisma.cliente.findUnique({ where: { email: dadosCliente.email } });
@@ -13,6 +16,9 @@ export const cadastroCompleto = async (dadosCliente) => {
   if (telefoneExiste) {
     throw new Error("Já existe um usuário com esse telefone.");
   }
+
+  // criptografar a senha do cliente
+  dadosCliente.senha = await hashSenha(dadosCliente.senha);
 
   // Cria o novo cliente
   const novoCliente = await prisma.cliente.create({
