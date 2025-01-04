@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id          Int       @id @default(autoincrement())
+  nome        String   
+  email       String    @unique
+  senha       String
+  role        String    @default("admin")
+}
+
+model Cliente {
+  id          Int       @id @default(autoincrement())
+  nome        String
+  sobrenome   String
+  email       String?   @unique
+  senha       String?
+  telefone    String    @unique
+  logradouro  String
+  numero      String
+  bairro      String 
+  cidade      String
+  estado      String
+  cep         String
+  role        String  @default("cliente")
+
+  //relacionamento com Emprestimo
+  emprestimos Emprestimo[]
+}
+
+model Funcionario {
+  id          Int       @id @default(autoincrement())
+  nome        String
+  sobrenome   String
+  email       String    @unique
+  senha       String
+  role        String    @default("funcionario")
+
+  // Relacionamento com Emprestimo
+  emprestimos Emprestimo[]
+}
+
+model Livro {
+  id            Int      @id @default(autoincrement())
+  titulo        String
+  isbn          String   @unique
+  qtdCopias     Int      @default(1)
+  qtdDisponivel Int      @default(1)
+  edicao        Int?
+
+  // Relacionamento com Autor
+  autorId       Int
+  autor         Autor     @relation(fields: [autorId], references: [id])
+
+  // Relacionamento com Editora
+  editoraId     Int
+  editora       Editora   @relation(fields: [editoraId], references: [id])
+
+  // Relacionamento com Categoria
+  categoriaId   Int
+  categoria     Categoria @relation(fields: [categoriaId], references: [id])
+
+  // Relacionamento com Emprestimo
+  emprestimos   Emprestimo[]
+
+  // Chave composta - impede que um livro seja cadastrado mais de uma vez
+  @@unique([titulo, isbn])
+}
+
+model Emprestimo {
+  id              Int          @id @default(autoincrement())
+  status          String
+  dataEmprestimo  DateTime
+  dataDevolucao   DateTime
+
+  // Relacionamento com Cliente
+  clienteId       Int
+  cliente         Cliente      @relation(fields: [clienteId], references: [id])
+
+  // Relacionamento com Funcionario
+  funcionarioId   Int?
+  funcionario     Funcionario? @relation(fields: [funcionarioId], references: [id])
+
+  // Relacionamento com Livro
+  livroId         Int
+  livro           Livro        @relation(fields: [livroId], references: [id])
+
+
+  // Chave composta - impede que um cliente pegue o mesmo livro mais de uma vez no mesmo dia
+  @@unique([clienteId, livroId, dataEmprestimo])
+}
+
+model Editora {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique
+
+  // Relacionamento com Livro
+  livros    Livro[]
+}
+
+model Autor {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique
+
+  // Relacionamento com Livro
+  livros    Livro[]
+}
+
+model Categoria {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique
+
+  // Relacionamento com Livro
+  livros    Livro[]
+}
