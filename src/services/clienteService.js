@@ -3,6 +3,7 @@ const prisma = new PrismaClient();
 
 // utils
 import hashSenha from "../utils/hashSenha.js";
+import { autenticarUsuario } from "./UsuariosService.js";
 
 // método para cadastrar cliente, abordar o cadastro completo(online) e simples(presencial)
 export const cadastrarCliente = async (dadosCliente, isCadastroCompleto = false) => {
@@ -34,4 +35,16 @@ export const cadastrarCliente = async (dadosCliente, isCadastroCompleto = false)
   });
 
   return novoCliente;
+};
+
+// login
+export const login = async (dadosLogin) => {
+  if (!dadosLogin.email || !dadosLogin.senha) {
+    throw new Error("Email e senha são obrigatórios para fazer login.");
+  }
+
+  const loginCliente = await autenticarUsuario(dadosLogin, "cliente");
+  if (!loginCliente) throw new Error("Credencial invalida.");
+
+  return loginCliente;
 };

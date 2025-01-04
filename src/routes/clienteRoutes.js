@@ -13,6 +13,7 @@ router.post("/cadastro-completo", clienteController.cadastroOnline);
 router.post("/cadastro-simples", clienteController.cadastroPresencial);
 
 // login do cliente
+router.post("/login", clienteController.login);
 
 // ver seus dados (PERFIL)
 
