@@ -5,6 +5,7 @@ import * as clienteController from "../controllers/clienteController.js";
 
 /* verifica se o CLIENTE já tem o cadastro simples e atualiza adicionando o email e senha,
    caso não tenha, ele fará um cadastro completo. */
+router.post("/verificar-conta", clienteController.verificaCadastroPresencial);
 
 // cadastro completo, ou seja, o online feito pelo cliente.
 router.post("/cadastro-completo", clienteController.cadastroOnline);
