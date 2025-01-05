@@ -23,7 +23,6 @@ export default async (req, res, next) => {
 
     return next();
   } catch (error) {
-    console.error(error.message);
     return res.status(401).json("Autorização necessária");
   }
 };
