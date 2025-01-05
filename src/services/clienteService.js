@@ -6,29 +6,40 @@ import hashSenha from "../utils/hashSenha.js";
 import { autenticarUsuario } from "./UsuariosService.js";
 import AppError from "../utils/AppError.js";
 
+// métodos auxiliares para verificar duplicidades
+async function verificarDuplicidadeEmail(email) {
+  const emailExiste = await prisma.cliente.findUnique({ where: { email } });
+  if (emailExiste) {
+    throw new AppError("Já existe um usuário com esse email.", 409);
+  }
+}
+
+async function verificarDuplicidadeTelefone(telefone) {
+  const telefoneExiste = await prisma.cliente.findUnique({ where: { telefone } });
+  if (telefoneExiste) {
+    throw new AppError("Já existe um usuário com esse telefone.", 409);
+  }
+}
+
 // método para cadastrar cliente, abordar o cadastro completo(online) e simples(presencial)
 export const cadastrarCliente = async (dadosCliente, isCadastroCompleto = false) => {
+  const { email, senha, telefone } = dadosCliente;
+
   if (isCadastroCompleto) {
     // Valida email e senha para cadastro completo
-    if (!dadosCliente.email || !dadosCliente.senha) {
+    if (!email || !senha) {
       throw new AppError("Email e senha são obrigatórios para cadastro completo.", 400);
     }
 
     // Verifica se o e-mail já existe
-    const emailExiste = await prisma.cliente.findUnique({ where: { email: dadosCliente.email } });
-    if (emailExiste) {
-      throw new AppError("Já existe um usuário com esse email.", 409);
-    }
+    await verificarDuplicidadeEmail(email);
 
     // Criptografa a senha
-    dadosCliente.senha = await hashSenha(dadosCliente.senha);
+    dadosCliente.senha = await hashSenha(senha);
   }
 
-  // Verifica se o telefone já existe (em ambos os casos)
-  const telefoneExiste = await prisma.cliente.findUnique({ where: { telefone: dadosCliente.telefone } });
-  if (telefoneExiste) {
-    throw new AppError("Já existe um usuário com esse telefone.", 409);
-  }
+  // Verifica se o telefone já existe (tanto no presencial quanto online)
+  await verificarDuplicidadeTelefone(telefone);
 
   // Cria o novo cliente
   const novoCliente = await prisma.cliente.create({
@@ -40,7 +51,9 @@ export const cadastrarCliente = async (dadosCliente, isCadastroCompleto = false)
 
 // login
 export const login = async (dadosLogin) => {
-  if (!dadosLogin.email || !dadosLogin.senha) {
+  const { email, senha } = dadosLogin;
+
+  if (!email || !senha) {
     throw new AppError("Email e senha são obrigatórios para fazer login.", 400);
   }
 
@@ -71,10 +84,7 @@ export const cadastroPresencialParaOnline = async (dados) => {
   }
 
   // Verifica se o email já está em uso por outro cliente
-  const checarEmail = await prisma.cliente.findFirst({ where: { email } });
-  if (checarEmail) {
-    throw new AppError("Esse email já está em uso.", 409);
-  }
+  await verificarDuplicidadeEmail(email);
 
   // Criptografa a senha antes de salvar
   const senhaHash = await hashSenha(senha);
