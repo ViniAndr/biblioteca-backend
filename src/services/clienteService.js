@@ -100,7 +100,7 @@ export const cadastroPresencialParaOnline = async (dados) => {
   }
 
   if (cliente.email || cliente.senha) {
-    throw new AppError("Esse cliente já possui cadastro para uso online.", 400);
+    throw new AppError("Esse usuário já possui cadastro para uso online.", 400);
   }
 
   // Verifica se o email já está em uso por outro cliente
@@ -116,4 +116,30 @@ export const cadastroPresencialParaOnline = async (dados) => {
   });
 
   return clienteAtualizadoParaOnline;
+};
+
+export const perfilDoCliente = async (id) => {
+  if (!id) {
+    throw new AppError("Id invalido, verifique o Id.", 400);
+  }
+
+  const cliente = await prisma.cliente.findUnique({
+    where: { id },
+    select: {
+      nome: true,
+      sobrenome: true,
+      telefone: true,
+      logradouro: true,
+      numero: true,
+      bairro: true,
+      cidade: true,
+      estado: true,
+      cep: true,
+    },
+  });
+  if (!cliente) {
+    throw new AppError("Usuário não localizado.", 404);
+  }
+
+  return cliente;
 };

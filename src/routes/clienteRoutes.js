@@ -1,7 +1,11 @@
 import { Router } from "express";
 const router = Router();
 
+// controller
 import * as clienteController from "../controllers/clienteController.js";
+
+// midllewares
+import autenticacaoObrigatoria from "../middlewares/autenticacaoObrigatoria.js";
 
 /* verifica se o CLIENTE já tem o cadastro simples e atualiza adicionando o email e senha,
    caso não tenha, ele fará um cadastro completo. */
@@ -17,6 +21,7 @@ router.post("/cadastro-simples", clienteController.cadastroPresencial);
 router.post("/login", clienteController.login);
 
 // ver seus dados (PERFIL)
+router.get("/perfil", autenticacaoObrigatoria, clienteController.perfilClienteLogado);
 
 // atualizar seus dados de regsitro (email, senha, telefone e nome)
 
