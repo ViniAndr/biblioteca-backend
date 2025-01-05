@@ -5,40 +5,32 @@ const prisma = new PrismaClient();
 import hashSenha from "../utils/hashSenha.js";
 import { autenticarUsuario } from "./UsuariosService.js";
 import AppError from "../utils/AppError.js";
+import gerarToken from "../utils/gerarToken.js";
 
 // métodos auxiliares para verificar duplicidades
 async function verificarDuplicidadeEmail(email) {
   const emailExiste = await prisma.cliente.findUnique({ where: { email } });
   if (emailExiste) {
-    throw new AppError("Já existe um usuário com esse email.", 409);
+    throw new AppError("Esse email já está cadastrado.", 409);
   }
 }
 
 async function verificarDuplicidadeTelefone(telefone) {
   const telefoneExiste = await prisma.cliente.findUnique({ where: { telefone } });
   if (telefoneExiste) {
-    throw new AppError("Já existe um usuário com esse telefone.", 409);
+    throw new AppError("Esse telefone já está cadastrado.", 409);
   }
 }
 
-// método para cadastrar cliente, abordar o cadastro completo(online) e simples(presencial)
-export const cadastrarCliente = async (dadosCliente, isCadastroCompleto = false) => {
-  const { email, senha, telefone } = dadosCliente;
+// Cadastro simples (presencial) feito pelo funcionario
+export const cadastrorSimples = async (dadosCliente) => {
+  const { telefone } = dadosCliente;
 
-  if (isCadastroCompleto) {
-    // Valida email e senha para cadastro completo
-    if (!email || !senha) {
-      throw new AppError("Email e senha são obrigatórios para cadastro completo.", 400);
-    }
-
-    // Verifica se o e-mail já existe
-    await verificarDuplicidadeEmail(email);
-
-    // Criptografa a senha
-    dadosCliente.senha = await hashSenha(senha);
+  if (!telefone) {
+    throw new AppError("Telefone é obrigatório.", 400);
   }
 
-  // Verifica se o telefone já existe (tanto no presencial quanto online)
+  // Verifica se o telefone já existe
   await verificarDuplicidadeTelefone(telefone);
 
   // Cria o novo cliente
@@ -47,6 +39,32 @@ export const cadastrarCliente = async (dadosCliente, isCadastroCompleto = false)
   });
 
   return novoCliente;
+};
+
+// Cadastro completo (online)
+export const cadastroCompleto = async (dadosCliente) => {
+  const { email, senha, telefone } = dadosCliente;
+
+  if (!email || !senha || !telefone) {
+    throw new AppError("Email, senha e telefone são obrigatórios.", 400);
+  }
+
+  // Verifica duplicidades
+  await verificarDuplicidadeTelefone(telefone);
+  await verificarDuplicidadeEmail(email);
+
+  // Criptografa a senha
+  const senhaCriptografada = await hashSenha(senha);
+
+  // Cria o novo cliente
+  const novoCliente = await prisma.cliente.create({
+    data: { ...dadosCliente, senha: senhaCriptografada },
+  });
+
+  // Gera o token
+  const token = gerarToken(novoCliente);
+
+  return token;
 };
 
 // login
@@ -59,10 +77,12 @@ export const login = async (dadosLogin) => {
 
   const clienteAutenticado = await autenticarUsuario(dadosLogin, "cliente");
   if (!clienteAutenticado) {
-    throw new AppError("Credencial invalida. Verifique os dados fornecidos.", 401);
+    throw new AppError("Credenciais inválidas. Verifique os dados fornecidos.", 401);
   }
 
-  return clienteAutenticado;
+  const token = gerarToken(clienteAutenticado);
+
+  return token;
 };
 
 // metodo paa verificar se o cliente já tem conta presencial e transforma em online

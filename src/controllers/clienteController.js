@@ -4,7 +4,7 @@ import * as clienteService from "../services/clienteService.js";
 function lidarComErros(error, res) {
   // Resposta de erro personalizada
   if (error.statusCode != 500) {
-    return res.status(error.statusCode).json({ error: error.message });
+    return res.status(error.statusCode || 500).json({ error: error.message });
   }
 
   // log do erro
@@ -17,7 +17,7 @@ function lidarComErros(error, res) {
 
 export const cadastroOnline = async (req, res) => {
   try {
-    const novoCliente = await clienteService.cadastrarCliente(req.body, true);
+    const novoCliente = await clienteService.cadastroCompleto(req.body);
 
     // Retorna a resposta de sucesso
     return res.status(201).json({
@@ -31,7 +31,7 @@ export const cadastroOnline = async (req, res) => {
 
 export const cadastroPresencial = async (req, res) => {
   try {
-    const novoCliente = await clienteService.cadastrarCliente(req.body, false);
+    const novoCliente = await clienteService.cadastrorSimples(req.body);
 
     // Retorna a resposta de sucesso
     return res.status(201).json({
@@ -49,7 +49,7 @@ export const login = async (req, res) => {
 
     return res.status(200).json({
       message: "Login feito com sucesso.",
-      cliente: loginCliente,
+      token: loginCliente,
     });
   } catch (error) {
     lidarComErros(error, res);
