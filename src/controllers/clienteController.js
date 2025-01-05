@@ -83,3 +83,14 @@ export const perfilClienteLogado = async (req, res) => {
     lidarComErros(error, res);
   }
 };
+
+export const consultarDadosDoClientePorId = async (req, res) => {
+  const clienteId = Number(req.params.id);
+
+  try {
+    const dadosCliente = await clienteService.perfilDoCliente(clienteId);
+    return res.status(200).json(dadosCliente);
+  } catch (error) {
+    lidarComErros(error, res);
+  }
+};

@@ -32,5 +32,6 @@ router.get("/perfil", autenticacaoObrigatoria, clienteController.perfilClienteLo
 // listar todos os clientes (Funcionario).
 
 // ver informações de um cliente por ID (Funcionario).
+router.get("/:id", clienteController.consultarDadosDoClientePorId);
 
 export default router;
