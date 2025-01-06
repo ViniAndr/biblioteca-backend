@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
+import bcrypt from "bcrypt";
 
 // utils
 import hashSenha from "../utils/hashSenha.js";
@@ -118,6 +119,7 @@ export const cadastroPresencialParaOnline = async (dados) => {
   return clienteAtualizadoParaOnline;
 };
 
+// Consultar os dados do cliente, metodo usado tanto pelo cliente e pelo funcionario
 export const perfilDoCliente = async (id) => {
   if (!id) {
     throw new AppError("Id invalido, verifique o Id.", 400);
@@ -142,4 +144,53 @@ export const perfilDoCliente = async (id) => {
   }
 
   return cliente;
+};
+
+export const atualizaDadosPessoais = async (id, dadosNovos) => {
+  const { nome, sobrenome, email, telefone, senhaAtual, senhaNova } = dadosNovos;
+
+  if (!id) {
+    throw new AppError("Id invalido, verifique o Id.", 400);
+  }
+
+  const cliente = await prisma.cliente.findUnique({ where: { id } });
+  if (!cliente) {
+    throw new AppError("Cliente não encontrado.", 404);
+  }
+
+  const dadosAtualizados = {};
+
+  if (nome && nome !== cliente.nome) dadosAtualizados.nome = nome;
+  if (sobrenome && sobrenome !== cliente.sobrenome) dadosAtualizados.sobrenome = sobrenome;
+
+  if (email && email !== cliente.email) {
+    await verificarDuplicidadeEmail(email);
+    dadosAtualizados.email = email;
+  }
+
+  if (telefone && telefone !== cliente.telefone) {
+    await verificarDuplicidadeTelefone(telefone);
+    dadosAtualizados.telefone = telefone;
+  }
+
+  if (senhaAtual && senhaNova) {
+    if (senhaAtual === senhaNova) {
+      throw new AppError("A senha nova não deve ser igual a atual", 400);
+    }
+
+    const senhaCorreta = await bcrypt.compare(senhaAtual, cliente.senha);
+    if (!senhaCorreta) {
+      throw new AppError("Senha atual incorreta", 401);
+    }
+    dadosAtualizados.senha = await hashSenha(senhaNova);
+  }
+
+  if (Object.keys(dadosAtualizados).length === 0) {
+    throw new AppError("Nenhum dado válido para atualizar.", 400);
+  }
+
+  await prisma.cliente.update({
+    where: { id },
+    data: { ...dadosAtualizados },
+  });
 };

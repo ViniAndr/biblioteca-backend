@@ -72,10 +72,6 @@ export const verificaCadastroPresencial = async (req, res) => {
 export const perfilClienteLogado = async (req, res) => {
   const clienteId = req.usuarioId;
 
-  if (!clienteId) {
-    return res.status(401).json({ mensagem: "Usuário não autenticado." });
-  }
-
   try {
     const dadosCliente = await clienteService.perfilDoCliente(clienteId);
     return res.status(200).json(dadosCliente);
@@ -90,6 +86,16 @@ export const consultarDadosDoClientePorId = async (req, res) => {
   try {
     const dadosCliente = await clienteService.perfilDoCliente(clienteId);
     return res.status(200).json(dadosCliente);
+  } catch (error) {
+    lidarComErros(error, res);
+  }
+};
+
+export const atualizarDados = async (req, res) => {
+  const clienteId = req.usuarioId;
+  try {
+    await clienteService.atualizaDadosPessoais(clienteId, req.body);
+    return res.status(200).json({ mensagem: "Dados atualizado com sucesso" });
   } catch (error) {
     lidarComErros(error, res);
   }

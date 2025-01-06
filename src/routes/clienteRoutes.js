@@ -24,6 +24,7 @@ router.post("/login", clienteController.login);
 router.get("/perfil", autenticacaoObrigatoria, clienteController.perfilClienteLogado);
 
 // atualizar seus dados de regsitro (email, senha, telefone e nome)
+router.post("/atualizar-dados", autenticacaoObrigatoria, clienteController.atualizarDados);
 
 // atualizar seus dados de endereço
 
