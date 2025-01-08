@@ -30,6 +30,7 @@ router.post("/atualizar-dados", autenticacaoObrigatoria, clienteController.atual
 router.post("/atualizar-endereco", autenticacaoObrigatoria, clienteController.atualizarEnderecoDoCliente);
 
 // atualizar todos os dados do cliente, porem quem faz isso é o funcionario.
+router.post("/atualizar-cliente/:id", autenticacaoObrigatoria, clienteController.atualizarPeloFuncionario);
 
 // listar todos os clientes (Funcionario).
 

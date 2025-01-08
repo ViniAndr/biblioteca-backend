@@ -207,8 +207,6 @@ export const atualizarEndereco = async (id, dadosNovos) => {
     throw new AppError("Cliente não encontrado.", 404);
   }
 
-  console.log(dadosNovos);
-
   const novoEndereco = {};
 
   if (logradouro && logradouro !== cliente.logradouro) novoEndereco.logradouro = logradouro;
@@ -225,5 +223,44 @@ export const atualizarEndereco = async (id, dadosNovos) => {
   await prisma.cliente.update({
     where: { id },
     data: { ...novoEndereco },
+  });
+};
+
+export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
+  const { nome, sobrenome, telefone, logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
+
+  if (!id) {
+    throw new AppError("Id invalido, verifique o Id.", 400);
+  }
+
+  const cliente = await prisma.cliente.findUnique({ where: { id } });
+  if (!cliente) {
+    throw new AppError("Cliente não encontrado.", 404);
+  }
+
+  const dadosAtualizados = {};
+
+  if (nome && nome !== cliente.nome) dadosAtualizados.nome = nome;
+  if (sobrenome && sobrenome !== cliente.sobrenome) dadosAtualizados.sobrenome = sobrenome;
+
+  if (telefone && telefone !== cliente.telefone) {
+    await verificarDuplicidadeTelefone(telefone);
+    dadosAtualizados.telefone = telefone;
+  }
+
+  if (logradouro && logradouro !== cliente.logradouro) dadosAtualizados.logradouro = logradouro;
+  if (numero && numero !== cliente.numero) dadosAtualizados.numero = numero;
+  if (bairro && bairro !== cliente.bairro) dadosAtualizados.bairro = bairro;
+  if (cidade && cidade !== cliente.cidade) dadosAtualizados.cidade = cidade;
+  if (estado && estado !== cliente.estado) dadosAtualizados.estado = estado;
+  if (cep && cep !== cliente.cep) dadosAtualizados.cep = cep;
+
+  if (Object.keys(dadosAtualizados).length === 0) {
+    throw new AppError("Nenhum dado válido para atualizar.", 400);
+  }
+
+  await prisma.cliente.update({
+    where: { id },
+    data: { ...dadosAtualizados },
   });
 };
