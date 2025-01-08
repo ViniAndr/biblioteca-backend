@@ -194,3 +194,36 @@ export const atualizaDadosPessoais = async (id, dadosNovos) => {
     data: { ...dadosAtualizados },
   });
 };
+
+export const atualizarEndereco = async (id, dadosNovos) => {
+  const { logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
+
+  if (!id) {
+    throw new AppError("Id invalido, verifique o Id.", 400);
+  }
+
+  const cliente = await prisma.cliente.findUnique({ where: { id } });
+  if (!cliente) {
+    throw new AppError("Cliente não encontrado.", 404);
+  }
+
+  console.log(dadosNovos);
+
+  const novoEndereco = {};
+
+  if (logradouro && logradouro !== cliente.logradouro) novoEndereco.logradouro = logradouro;
+  if (numero && numero !== cliente.numero) novoEndereco.numero = numero;
+  if (bairro && bairro !== cliente.bairro) novoEndereco.bairro = bairro;
+  if (cidade && cidade !== cliente.cidade) novoEndereco.cidade = cidade;
+  if (estado && estado !== cliente.estado) novoEndereco.estado = estado;
+  if (cep && cep !== cliente.cep) novoEndereco.cep = cep;
+
+  if (Object.keys(novoEndereco).length === 0) {
+    throw new AppError("Nenhum dado válido para atualizar.", 400);
+  }
+
+  await prisma.cliente.update({
+    where: { id },
+    data: { ...novoEndereco },
+  });
+};

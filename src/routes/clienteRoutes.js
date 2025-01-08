@@ -27,6 +27,7 @@ router.get("/perfil", autenticacaoObrigatoria, clienteController.perfilClienteLo
 router.post("/atualizar-dados", autenticacaoObrigatoria, clienteController.atualizarDados);
 
 // atualizar seus dados de endereço
+router.post("/atualizar-endereco", autenticacaoObrigatoria, clienteController.atualizarEnderecoDoCliente);
 
 // atualizar todos os dados do cliente, porem quem faz isso é o funcionario.
 

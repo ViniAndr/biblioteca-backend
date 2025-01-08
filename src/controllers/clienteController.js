@@ -100,3 +100,14 @@ export const atualizarDados = async (req, res) => {
     lidarComErros(error, res);
   }
 };
+
+export const atualizarEnderecoDoCliente = async (req, res) => {
+  const clienteId = req.usuarioId;
+  console.log(req.body);
+  try {
+    await clienteService.atualizarEndereco(clienteId, req.body);
+    return res.status(200).json({ mensagem: "Endereço atualizado com sucesso" });
+  } catch (error) {
+    lidarComErros(error, res);
+  }
+};
