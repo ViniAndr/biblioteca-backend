@@ -5,6 +5,9 @@ function lidarComErros(error, res) {
   // Resposta de erro personalizada
   if (error.statusCode != 500) {
     return res.status(error.statusCode || 500).json({ error: error.message });
+  } else {
+    // log do erro
+    console.log(error);
   }
 
   // log do erro
@@ -58,7 +61,9 @@ export const login = async (req, res) => {
 
 export const verificaCadastroPresencial = async (req, res) => {
   try {
-    const verificacao = await clienteService.cadastroPresencialParaOnline(req.body);
+    const verificacao = await clienteService.cadastroPresencialParaOnline(
+      req.body
+    );
 
     return res.status(200).json({
       mensagem: "Sua conta presencial agora pode ser usada online",
@@ -105,7 +110,9 @@ export const atualizarEnderecoDoCliente = async (req, res) => {
   const clienteId = req.usuarioId;
   try {
     await clienteService.atualizarEndereco(clienteId, req.body);
-    return res.status(200).json({ mensagem: "Endereço atualizado com sucesso" });
+    return res
+      .status(200)
+      .json({ mensagem: "Endereço atualizado com sucesso" });
   } catch (error) {
     lidarComErros(error, res);
   }

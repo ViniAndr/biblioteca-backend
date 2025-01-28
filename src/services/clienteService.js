@@ -7,36 +7,23 @@ import hashSenha from "../utils/hashSenha.js";
 import { autenticarUsuario } from "./UsuariosService.js";
 import AppError from "../utils/AppError.js";
 import gerarToken from "../utils/gerarToken.js";
-
-// métodos auxiliares para verificar duplicidades
-async function verificarDuplicidadeEmail(email) {
-  const emailExiste = await prisma.cliente.findUnique({ where: { email } });
-  if (emailExiste) {
-    throw new AppError("Esse email já está cadastrado.", 409);
-  }
-}
-
-async function verificarDuplicidadeTelefone(telefone) {
-  const telefoneExiste = await prisma.cliente.findUnique({ where: { telefone } });
-  if (telefoneExiste) {
-    throw new AppError("Esse telefone já está cadastrado.", 409);
-  }
-}
+import { verificarDuplicidade } from "../utils/verificarDuplicidade.js";
 
 // Cadastro simples (presencial) feito pelo funcionario
 export const cadastrorSimples = async (dadosCliente) => {
-  const { telefone } = dadosCliente;
+  const { telefone, nome, sobrenome } = dadosCliente;
+  const nomeCompleto = `${nome} ${sobrenome}`;
 
   if (!telefone) {
     throw new AppError("Telefone é obrigatório.", 400);
   }
 
   // Verifica se o telefone já existe
-  await verificarDuplicidadeTelefone(telefone);
+  await verificarDuplicidade("telefone", telefone, "cliente");
 
   // Cria o novo cliente
   const novoCliente = await prisma.cliente.create({
-    data: dadosCliente,
+    data: { ...dadosCliente, nome: nomeCompleto },
   });
 
   return novoCliente;
@@ -44,22 +31,23 @@ export const cadastrorSimples = async (dadosCliente) => {
 
 // Cadastro completo (online)
 export const cadastroCompleto = async (dadosCliente) => {
-  const { email, senha, telefone } = dadosCliente;
+  const { email, senha, telefone, nome, sobrenome } = dadosCliente;
+  const nomeCompleto = `${nome} ${sobrenome}`;
 
   if (!email || !senha || !telefone) {
     throw new AppError("Email, senha e telefone são obrigatórios.", 400);
   }
 
   // Verifica duplicidades
-  await verificarDuplicidadeTelefone(telefone);
-  await verificarDuplicidadeEmail(email);
+  await verificarDuplicidade("telefone", telefone, "cliente");
+  await verificarDuplicidade("email", email, "cliente");
 
   // Criptografa a senha
   const senhaCriptografada = await hashSenha(senha);
 
   // Cria o novo cliente
   const novoCliente = await prisma.cliente.create({
-    data: { ...dadosCliente, senha: senhaCriptografada },
+    data: { ...dadosCliente, senha: senhaCriptografada, nome: nomeCompleto },
   });
 
   // Gera o token
@@ -105,7 +93,7 @@ export const cadastroPresencialParaOnline = async (dados) => {
   }
 
   // Verifica se o email já está em uso por outro cliente
-  await verificarDuplicidadeEmail(email);
+  await verificarDuplicidade("email", email, "cliente");
 
   // Criptografa a senha antes de salvar
   const senhaHash = await hashSenha(senha);
@@ -148,6 +136,7 @@ export const perfilDoCliente = async (id) => {
 
 export const atualizaDadosPessoais = async (id, dadosNovos) => {
   const { nome, sobrenome, email, telefone, senhaAtual, senhaNova } = dadosNovos;
+  const nomeCompleto = `${nome} ${sobrenome}`;
 
   if (!id) {
     throw new AppError("Id invalido, verifique o Id.", 400);
@@ -164,12 +153,12 @@ export const atualizaDadosPessoais = async (id, dadosNovos) => {
   if (sobrenome && sobrenome !== cliente.sobrenome) dadosAtualizados.sobrenome = sobrenome;
 
   if (email && email !== cliente.email) {
-    await verificarDuplicidadeEmail(email);
+    await verificarDuplicidade("email", email, "cliente");
     dadosAtualizados.email = email;
   }
 
   if (telefone && telefone !== cliente.telefone) {
-    await verificarDuplicidadeTelefone(telefone);
+    await verificarDuplicidade("telefone", telefone, "cliente");
     dadosAtualizados.telefone = telefone;
   }
 
@@ -191,7 +180,7 @@ export const atualizaDadosPessoais = async (id, dadosNovos) => {
 
   await prisma.cliente.update({
     where: { id },
-    data: { ...dadosAtualizados },
+    data: { ...dadosAtualizados, nome: nomeCompleto },
   });
 };
 
@@ -228,6 +217,7 @@ export const atualizarEndereco = async (id, dadosNovos) => {
 
 export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
   const { nome, sobrenome, telefone, logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
+  const nomeCompleto = `${nome} ${sobrenome}`;
 
   if (!id) {
     throw new AppError("Id invalido, verifique o Id.", 400);
@@ -244,7 +234,7 @@ export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
   if (sobrenome && sobrenome !== cliente.sobrenome) dadosAtualizados.sobrenome = sobrenome;
 
   if (telefone && telefone !== cliente.telefone) {
-    await verificarDuplicidadeTelefone(telefone);
+    await verificarDuplicidade("telefone", telefone, "cliente");
     dadosAtualizados.telefone = telefone;
   }
 
@@ -261,6 +251,6 @@ export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
 
   await prisma.cliente.update({
     where: { id },
-    data: { ...dadosAtualizados },
+    data: { ...dadosAtualizados, nome: nomeCompleto },
   });
 };
