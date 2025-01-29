@@ -9,17 +9,20 @@ import AppError from "../utils/AppError.js";
 import gerarToken from "../utils/gerarToken.js";
 import { verificarDuplicidade } from "../utils/verificarDuplicidade.js";
 import { limparTelefone, juntarNomes, formatarTelefoneBR } from "../utils/formatador.js";
+import * as validacao from "../utils/validacao.js";
 
 // Cadastro simples (presencial) feito pelo funcionario
 export const cadastrorSimples = async (dadosCliente) => {
   const { nome, sobrenome } = dadosCliente;
   const telefone = limparTelefone(dadosCliente.telefone);
+
+  // Validações
+  validacao.validarTelefone(telefone);
+  validacao.validarNome(nome);
+  validacao.validarNome(sobrenome);
+  validacao.validarEndereco(dadosCliente);
   const nomeCompleto = juntarNomes(nome, sobrenome);
   delete dadosCliente.sobrenome;
-
-  if (!telefone) {
-    throw new AppError("Telefone é obrigatório.", 400);
-  }
 
   // Verifica se o telefone já existe
   await verificarDuplicidade("telefone", telefone, "cliente");
@@ -43,12 +46,16 @@ export const cadastrorSimples = async (dadosCliente) => {
 export const cadastroCompleto = async (dadosCliente) => {
   const { email, senha, nome, sobrenome } = dadosCliente;
   const telefone = limparTelefone(dadosCliente.telefone);
+
+  // Validações
+  validacao.validarTelefone(telefone);
+  validacao.validarEmail(email);
+  validacao.validarSenha(senha);
+  validacao.validarEndereco(dadosCliente);
+  validacao.validarNome(nome);
+  validacao.validarNome(sobrenome);
   const nomeCompleto = juntarNomes(nome, sobrenome);
   delete dadosCliente.sobrenome;
-
-  if (!email || !senha || !telefone) {
-    throw new AppError("Email, senha e telefone são obrigatórios.", 400);
-  }
 
   // Verifica duplicidades
   await verificarDuplicidade("telefone", telefone, "cliente");
@@ -77,9 +84,9 @@ export const cadastroCompleto = async (dadosCliente) => {
 export const login = async (dadosLogin) => {
   const { email, senha } = dadosLogin;
 
-  if (!email || !senha) {
-    throw new AppError("Email e senha são obrigatórios para fazer login.", 400);
-  }
+  // Validações
+  validacao.validarEmail(email);
+  validacao.validarSenha(senha);
 
   const clienteAutenticado = await autenticarUsuario(dadosLogin, "cliente");
   if (!clienteAutenticado) {
@@ -87,7 +94,6 @@ export const login = async (dadosLogin) => {
   }
 
   const token = gerarToken(clienteAutenticado);
-
   return token;
 };
 
@@ -96,9 +102,10 @@ export const cadastroPresencialParaOnline = async (dados) => {
   const { email, senha } = dados;
   const telefone = limparTelefone(dados.telefone);
 
-  if (!email || !senha || !telefone) {
-    throw new AppError("Todos os campos são obrigatórios.", 400);
-  }
+  // Validações
+  validacao.validarTelefone(telefone);
+  validacao.validarEmail(email);
+  validacao.validarSenha(senha);
 
   // Verifica se o cliente já possui cadastro presencial
   const cliente = await prisma.cliente.findUnique({ where: { telefone } });
@@ -106,7 +113,7 @@ export const cadastroPresencialParaOnline = async (dados) => {
     throw new AppError("Cadastro não localizado. Verifique os dados fornecidos.", 404);
   }
 
-  if (cliente.email || cliente.senha) {
+  if (cliente.email && cliente.senha) {
     throw new AppError("Esse usuário já possui cadastro para uso online.", 400);
   }
 
@@ -125,9 +132,8 @@ export const cadastroPresencialParaOnline = async (dados) => {
 
 // Consultar os dados do cliente, metodo usado tanto pelo cliente e pelo funcionario
 export const perfilDoCliente = async (id) => {
-  if (!id) {
-    throw new AppError("Id invalido, verifique o Id.", 400);
-  }
+  // Validações
+  validacao.valdiarId(id);
 
   const cliente = await prisma.cliente.findUnique({
     where: { id },
@@ -155,11 +161,8 @@ export const perfilDoCliente = async (id) => {
 export const atualizaDadosPessoais = async (id, dadosNovos) => {
   const { nome, sobrenome, email, senhaAtual, senhaNova } = dadosNovos;
   const telefone = limparTelefone(dadosNovos.telefone);
-  // const nomeCompleto = juntarNomes(nome, sobrenome);
 
-  if (!id) {
-    throw new AppError("Id invalido, verifique o Id.", 400);
-  }
+  validacao.valdiarId(id);
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
@@ -169,16 +172,20 @@ export const atualizaDadosPessoais = async (id, dadosNovos) => {
   const dadosAtualizados = {};
 
   if (nome?.trim() && sobrenome?.trim() && `${nome} ${sobrenome}`.toLowerCase() !== cliente.nome.toLowerCase()) {
+    validacao.validarNome(nome);
+    validacao.validarNome(sobrenome);
     dadosAtualizados.nome = juntarNomes(nome, sobrenome);
   }
 
   if (email && email !== cliente.email) {
-    await verificarDuplicidade("email", email, "cliente");
+    validacao.validarEmail(email);
+    await verificarDuplicidade("email", email, "cliente", "Esse email já está em uso");
     dadosAtualizados.email = email;
   }
 
   if (telefone && telefone !== cliente.telefone) {
-    await verificarDuplicidade("telefone", telefone, "cliente");
+    validacao.validarTelefone(telefone);
+    await verificarDuplicidade("telefone", telefone, "cliente", "Esse telefone já está em uso");
     dadosAtualizados.telefone = telefone;
   }
 
@@ -191,6 +198,7 @@ export const atualizaDadosPessoais = async (id, dadosNovos) => {
     if (!senhaCorreta) {
       throw new AppError("Senha atual incorreta", 401);
     }
+    validacao.validarSenha(senhaNova);
     dadosAtualizados.senha = await hashSenha(senhaNova);
   }
 
@@ -207,9 +215,7 @@ export const atualizaDadosPessoais = async (id, dadosNovos) => {
 export const atualizarEndereco = async (id, dadosNovos) => {
   const { logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
 
-  if (!id) {
-    throw new AppError("Id invalido, verifique o Id.", 400);
-  }
+  validacao.valdiarId(id);
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
@@ -222,8 +228,14 @@ export const atualizarEndereco = async (id, dadosNovos) => {
   if (numero && numero !== cliente.numero) novoEndereco.numero = numero;
   if (bairro && bairro !== cliente.bairro) novoEndereco.bairro = bairro;
   if (cidade && cidade !== cliente.cidade) novoEndereco.cidade = cidade;
-  if (estado && estado !== cliente.estado) novoEndereco.estado = estado;
-  if (cep && cep !== cliente.cep) novoEndereco.cep = cep;
+  if (estado && estado !== cliente.estado) {
+    validacao.validarEstado(estado);
+    novoEndereco.estado = estado;
+  }
+  if (cep && cep !== cliente.cep) {
+    validacao.validarCEP(cep);
+    novoEndereco.cep = cep;
+  }
 
   if (Object.keys(novoEndereco).length === 0) {
     throw new AppError("Nenhum dado válido para atualizar.", 400);
@@ -238,11 +250,8 @@ export const atualizarEndereco = async (id, dadosNovos) => {
 export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
   const { nome, sobrenome, logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
   const telefone = limparTelefone(dadosNovos.telefone);
-  // const nomeCompleto = juntarNomes(nome, sobrenome);
 
-  if (!id) {
-    throw new AppError("Id invalido, verifique o Id.", 400);
-  }
+  validacao.valdiarId(id);
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
@@ -252,10 +261,13 @@ export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
   const dadosAtualizados = {};
 
   if (nome?.trim() && sobrenome?.trim() && `${nome} ${sobrenome}`.toLowerCase() !== cliente.nome.toLowerCase()) {
+    validacao.validarNome(nome);
+    validacao.validarNome(sobrenome);
     dadosAtualizados.nome = juntarNomes(nome, sobrenome);
   }
 
   if (telefone && telefone !== cliente.telefone) {
+    validacao.validarTelefone(telefone);
     await verificarDuplicidade("telefone", telefone, "cliente");
     dadosAtualizados.telefone = telefone;
   }
@@ -264,14 +276,18 @@ export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
   if (numero && numero !== cliente.numero) dadosAtualizados.numero = numero;
   if (bairro && bairro !== cliente.bairro) dadosAtualizados.bairro = bairro;
   if (cidade && cidade !== cliente.cidade) dadosAtualizados.cidade = cidade;
-  if (estado && estado !== cliente.estado) dadosAtualizados.estado = estado;
-  if (cep && cep !== cliente.cep) dadosAtualizados.cep = cep;
+  if (estado && estado !== cliente.estado) {
+    validacao.validarEstado(estado);
+    dadosAtualizados.estado = estado;
+  }
+  if (cep && cep !== cliente.cep) {
+    validacao.validarCEP(cep);
+    dadosAtualizados.cep = cep;
+  }
 
   if (Object.keys(dadosAtualizados).length === 0) {
     throw new AppError("Nenhum dado válido para atualizar.", 400);
   }
-
-  console.log(dadosAtualizados);
 
   await prisma.cliente.update({
     where: { id },
