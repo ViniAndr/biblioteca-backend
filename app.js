@@ -2,6 +2,7 @@ import express from "express";
 
 // Routes
 import clienteRoutes from "./src/routes/clienteRoutes.js";
+import adminRoutes from "./src/routes/adminRoutes.js";
 
 class App {
   constructor() {
@@ -17,6 +18,7 @@ class App {
 
   routes() {
     this.app.use("/cliente", clienteRoutes);
+    this.app.use("/admin", adminRoutes);
   }
 }
 
