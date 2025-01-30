@@ -17,12 +17,12 @@ function lidarComErros(error, res) {
 
 export const cadastroOnline = async (req, res) => {
   try {
-    const novoCliente = await clienteService.cadastroCompleto(req.body);
+    const token = await clienteService.cadastroCompleto(req.body);
 
     // Retorna a resposta de sucesso
     return res.status(201).json({
       mensagem: "Cliente cadastrado com sucesso",
-      cliente: novoCliente,
+      token,
     });
   } catch (error) {
     lidarComErros(error, res);
@@ -45,11 +45,11 @@ export const cadastroPresencial = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const loginCliente = await clienteService.login(req.body);
+    const token = await clienteService.login(req.body);
 
     return res.status(200).json({
       mensagem: "Login feito com sucesso",
-      token: loginCliente,
+      token,
     });
   } catch (error) {
     lidarComErros(error, res);
@@ -58,7 +58,7 @@ export const login = async (req, res) => {
 
 export const verificaCadastroPresencial = async (req, res) => {
   try {
-    const verificacao = await clienteService.cadastroPresencialParaOnline(req.body);
+    await clienteService.cadastroPresencialParaOnline(req.body);
 
     return res.status(200).json({
       mensagem: "Sua conta presencial agora pode ser usada online",

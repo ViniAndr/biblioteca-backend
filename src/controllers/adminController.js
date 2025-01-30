@@ -23,3 +23,45 @@ export const criarConta = async (req, res) => {
     lidarComErros(error, res);
   }
 };
+
+export const login = async (req, res) => {
+  try {
+    const token = await adminService.loginConta(req.body);
+    return res.status(200).json({
+      message: "Login feito com sucesso",
+      token,
+    });
+  } catch (error) {
+    lidarComErros(error, res);
+  }
+};
+
+export const verPerfil = async (req, res) => {
+  const adminId = req.usuarioId;
+  try {
+    const adminPerfil = await adminService.perfil(adminId);
+    return res.status(200).json(adminPerfil);
+  } catch (error) {
+    lidarComErros(error, res);
+  }
+};
+
+export const atualizarPerfil = async (req, res) => {
+  const adminId = req.usuarioId;
+  try {
+    await adminService.atualizarDados(adminId, req.body);
+    res.status(200).json({ mensagem: "Dados atualizado com sucesso" });
+  } catch (error) {
+    lidarComErros(error, res);
+  }
+};
+
+export const resetDeConta = async (req, res) => {
+  const adminId = req.usuarioId;
+  try {
+    await adminService.resetarDados(adminId);
+    res.status(200).json({ mensagem: "Conta resetada com sucesso" });
+  } catch (error) {
+    lidarComErros(error, res);
+  }
+};
