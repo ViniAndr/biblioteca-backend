@@ -33,6 +33,7 @@ router.post("/atualizar-endereco", autenticacaoObrigatoria, clienteController.at
 router.post("/atualizar-cliente/:id", autenticacaoObrigatoria, clienteController.atualizarPeloFuncionario);
 
 // listar todos os clientes (Funcionario).
+router.get("/listar", autenticacaoObrigatoria, clienteController.listarClientes);
 
 // ver informações de um cliente por ID (Funcionario).
 router.get("/:id", clienteController.consultarDadosDoClientePorId);

@@ -119,3 +119,15 @@ export const atualizarPeloFuncionario = async (req, res) => {
     lidarComErros(error, res);
   }
 };
+
+export const listarClientes = async (req, res) => {
+  // Parametros opcionais para FILTROS
+  const { pagina, nomeCliente, qtdItensPorPagina } = req.query;
+  const qtdItensPorPaginaAtual = qtdItensPorPagina ? Number(qtdItensPorPagina) : 10;
+  try {
+    const clientes = await clienteService.verTodosClientes(pagina, nomeCliente, qtdItensPorPaginaAtual);
+    return res.status(200).json(clientes);
+  } catch (error) {
+    lidarComErros(error, res);
+  }
+};

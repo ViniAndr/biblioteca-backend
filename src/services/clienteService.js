@@ -297,3 +297,37 @@ export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
     },
   });
 };
+
+export const verTodosClientes = async (pagina = 1, nome, qtdItensPorPagina) => {
+  const where = {};
+
+  if (nome) {
+    where.nome = {
+      contains: nome, // Busca livros cujo nome contém o termo
+      mode: "insensitive", // Ignora maiúsculas/minúsculas na busca
+    };
+  }
+
+  const clientes = await prisma.cliente.findMany({
+    where,
+    select: {
+      id: true,
+      nome: true,
+      telefone: true,
+      cidade: true,
+      estado: true,
+    },
+    // take = pega tal quantidade de itens do BD
+    take: Number(qtdItensPorPagina),
+    // skip = serve para "pular" itens já trazidos em páginas anteriores
+    skip: (Number(pagina) - 1) * Number(qtdItensPorPagina),
+  });
+  // Diz o total de itens encontrados
+  const contador = await prisma.cliente.count({ where });
+
+  return {
+    clientes,
+    qtdTotalDePaginas: Math.ceil(contador / qtdItensPorPagina),
+    paginaAtual: Number(pagina),
+  };
+};
