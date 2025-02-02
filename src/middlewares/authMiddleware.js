@@ -1,4 +1,4 @@
-// Função dele é ser usado para verificar se ao usar uma rota o usuario está logado
+// A função dele é ser usado para verificar se ao usar uma rota o usuario está logado
 import jwt from "jsonwebtoken";
 
 export default async (req, res, next) => {

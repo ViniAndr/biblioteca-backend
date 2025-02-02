@@ -10,7 +10,7 @@ import { validarEmail, validarSenha } from "../utils/validacao.js";
 import { autenticarUsuario } from "./UsuariosService.js";
 
 // criação feita apenas 1 vez!!!
-export const criarContaPadrao = async () => {
+export const cadastrar = async () => {
   const nome = "Administrador"; // validado
   const email = "admin@biblioteca.com"; // validado
   const senha = await hashSenha("biblioteca123"); // validado
@@ -23,7 +23,7 @@ export const criarContaPadrao = async () => {
   await prisma.admin.create({ data: { nome, email, senha } });
 };
 
-export const loginConta = async (dadosLogin) => {
+export const login = async (dadosLogin) => {
   // Validações
   validarEmail(dadosLogin.email);
   validarSenha(dadosLogin.senha);
@@ -37,7 +37,7 @@ export const loginConta = async (dadosLogin) => {
   return token;
 };
 
-export const perfil = async (id) => {
+export const obterPerfil = async (id) => {
   // não vou validar ID porque sei que não pode haver erros
   // não validei se o admin foi econtrado por essa função só tem para admin logado
 

@@ -5,37 +5,41 @@ const router = Router();
 import * as clienteController from "../controllers/clienteController.js";
 
 // midllewares
-import autenticacaoObrigatoria from "../middlewares/autenticacaoObrigatoria.js";
+import authMiddleware from "../middlewares/authMiddleware.js";
+import handleErrors from "../middlewares/handleErrors.js";
 
 /* verifica se o CLIENTE já tem o cadastro simples e atualiza adicionando o email e senha,
    caso não tenha, ele fará um cadastro completo. */
 router.post("/verificar-conta", clienteController.verificaCadastroPresencial);
 
 // cadastro completo, ou seja, o online feito pelo cliente.
-router.post("/cadastro-completo", clienteController.cadastroOnline);
+router.post("/cadastro-online", clienteController.criarContaOnline);
 
 // cadastro simples, ou seja, o presencial feito pelo funcionario
-router.post("/cadastro-simples", clienteController.cadastroPresencial);
+router.post("/cadastro-presencial", clienteController.criarContaPresencial);
 
 // login do cliente
 router.post("/login", clienteController.login);
 
 // ver seus dados (PERFIL)
-router.get("/perfil", autenticacaoObrigatoria, clienteController.perfilClienteLogado);
+router.get("/perfil", authMiddleware, clienteController.verPerfil);
 
 // atualizar seus dados de regsitro (email, senha, telefone e nome)
-router.post("/atualizar-dados", autenticacaoObrigatoria, clienteController.atualizarDados);
+router.put("/atualizar-dados", authMiddleware, clienteController.atualizarPerfil);
 
 // atualizar seus dados de endereço
-router.post("/atualizar-endereco", autenticacaoObrigatoria, clienteController.atualizarEnderecoDoCliente);
+router.put("/atualizar-endereco", authMiddleware, clienteController.atualizarEndereco);
 
 // atualizar todos os dados do cliente, porem quem faz isso é o funcionario.
-router.post("/atualizar-cliente/:id", autenticacaoObrigatoria, clienteController.atualizarPeloFuncionario);
+router.put("/atualizar-cliente/:id", authMiddleware, clienteController.atualizaPorId);
 
 // listar todos os clientes (Funcionario).
-router.get("/listar", autenticacaoObrigatoria, clienteController.listarClientes);
+router.get("/listar", authMiddleware, clienteController.listarTodos);
 
 // ver informações de um cliente por ID (Funcionario).
-router.get("/:id", clienteController.consultarDadosDoClientePorId);
+router.get("/:id", clienteController.obterPorId);
+
+// Middleware global de tratamento de erros
+router.use(handleErrors);
 
 export default router;

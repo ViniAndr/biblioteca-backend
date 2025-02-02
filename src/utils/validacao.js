@@ -1,19 +1,22 @@
 import AppError from "./AppError.js";
 
 // Valida o ID (não vazio, numérico e válido)
-export const valdiarId = (id) => {
-  if (!id || isNaN(Number(id)) || Number(id) < 1) {
-    throw new AppError("Id inválido", 400);
+export const validarId = (id) => {
+  if (!id || isNaN(Number(id)) || Number(id) < 1 || !Number.isInteger(Number(id))) {
+    throw new AppError("ID inválido. Deve ser um número inteiro positivo", 400);
   }
 };
 
 // Valida o nome e sobrenome
 export const validarNome = (nome) => {
+  if (!nome || typeof nome !== "string") {
+    throw new AppError("Nome inválido.", 400);
+  }
+
   const nomeMinusculo = nome.toLowerCase().trim();
-  const regexNome = /^[a-zà-ú]{3,20}$/;
-  if (!nomeMinusculo || nomeMinusculo.length < 3 || !regexNome.test(nomeMinusculo) || nomeMinusculo.length > 20) {
-    // undefined, null, "  ", "an", "v1nic1us", "asdfghjklqwerrtyuioasc", ""
-    throw new AppError("O nome e sobrenome deve ser válidos", 400);
+  const regexNome = /^[a-zà-ú\s]{3,40}$/i; // para aceita nome composto
+  if (!regexNome.test(nomeMinusculo)) {
+    throw new AppError("O nome deve conter apenas letras e ter entre 3 e 40 caracteres", 400);
   }
 };
 
@@ -27,17 +30,23 @@ export const validarEmail = (email) => {
 
 // Validar telefone
 export const validarTelefone = (telefone) => {
+  if (!telefone || typeof telefone !== "string") {
+    throw new AppError("telefone inválido.", 400);
+  }
   // só aceita 11 números e o terceiro é obrigatorio ser o 9
   const regexTelefone = /^[1-9]{2}9\d{8}$/;
   if (!telefone || !regexTelefone.test(telefone)) {
-    throw new AppError("telefone inválido.", 400);
+    throw new AppError("O telefone deve ter 11 digitos e o terceiro ser o 9.", 400);
   }
 };
 
 // Valida o formato da senha (mínimo de 6 caracteres e maximo 35 válidos)
 export const validarSenha = (senha) => {
-  if (!senha || senha.trim().length < 6 || senha.trim().length > 35) {
-    throw new AppError("A senha deve ter entre 6 á 35 caracteres válidos.", 400);
+  if (!senha || typeof senha !== "string") {
+    throw new AppError("Senha inválida.", 400);
+  }
+  if (senha.length < 6 || senha.length > 35) {
+    throw new AppError("A senha deve ter entre 6 e 35 caracteres.", 400);
   }
 };
 
@@ -61,7 +70,7 @@ export const validarEstado = (estado) => {
 
 // Valida endereços (todos os campos obrigatórios)
 export const validarEndereco = ({ logradouro, bairro, cidade, estado, cep }) => {
-  if (!logradouro || !bairro || !cidade || !estado || !cep) {
+  if (!logradouro?.trim() || !bairro?.trim() || !cidade?.trim() || !estado?.trim() || !cep?.trim()) {
     throw new AppError("Todos os campos do endereço são obrigatórios.", 400);
   }
 

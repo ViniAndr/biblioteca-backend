@@ -4,13 +4,24 @@ const prisma = new PrismaClient();
 
 // Utils
 import hashSenha from "../utils/hashSenha.js";
-import { validarEmail, validarSenha, valdiarId, validarNome } from "../utils/validacao.js";
+import { validarEmail, validarSenha, validarId, validarNome } from "../utils/validacao.js";
 import { autenticarUsuario } from "./UsuariosService.js";
 import AppError from "../utils/AppError.js";
 import gerarToken from "../utils/gerarToken.js";
 import { juntarNomes } from "../utils/formatador.js";
+import verificarDuplicidade from "../utils/verificarDuplicidade.js";
 
-export const cadastrarFuncionario = async () => {
+export const cadastrar = async (senhaAdmin) => {
+  const admin = await prisma.admin.findFirst({ select: { senha: true } });
+  if (!admin) {
+    throw new AppError("Administrador não encontrado.", 404);
+  }
+
+  const senhaValida = await bcrypt.compare(senhaAdmin.senha, admin.senha);
+  if (!senhaValida) {
+    throw new AppError("Senha do administrador incorreta.", 403);
+  }
+
   // Pega o último funcionário cadastrado
   const ultimoFuncionario = await prisma.funcionario.findFirst({
     orderBy: { id: "desc" }, // Ordena pelo último ID inserido
@@ -38,7 +49,7 @@ export const cadastrarFuncionario = async () => {
   };
 };
 
-export const loginConta = async (dados) => {
+export const login = async (dados) => {
   const { email, senha } = dados;
   // Validações
   validarEmail(email);
@@ -53,8 +64,8 @@ export const loginConta = async (dados) => {
   return token;
 };
 
-export const perfil = async (id) => {
-  valdiarId(id);
+export const obterPerfil = async (id) => {
+  validarId(id);
   return await prisma.funcionario.findUnique({
     where: { id },
     select: {
@@ -69,7 +80,7 @@ export const atualizarDados = async (id, dados) => {
 
   const dadosNovos = {};
   // Validações
-  valdiarId(id);
+  validarId(id);
 
   const funcionario = await prisma.funcionario.findUnique({ where: { id } });
   if (!funcionario) {
@@ -77,13 +88,14 @@ export const atualizarDados = async (id, dados) => {
   }
 
   if (nome?.trim() && sobrenome?.trim() && `${nome} ${sobrenome}`.toLowerCase() !== cliente.nome.toLowerCase()) {
-    validacao.validarNome(nome);
-    validacao.validarNome(sobrenome);
+    validarNome(nome);
+    validarNome(sobrenome);
     dadosNovos.nome = juntarNomes(nome, sobrenome);
   }
 
   if (email && email !== funcionario.email) {
     validarEmail(email);
+    await verificarDuplicidade("email", email, "funcionario", prisma);
     dadosNovos.email = email;
   }
 

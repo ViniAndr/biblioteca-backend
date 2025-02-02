@@ -1,21 +1,19 @@
-export const limparTelefone = (telefone) => {
-  // Remove todos os caracteres que não sejam números
-  const telefoneNumerico = telefone.replace(/\D/g, "");
+import AppError from "./AppError.js";
 
-  return telefoneNumerico.trim();
-};
+export const limparTelefone = (telefone) => telefone.replace(/\D/g, "").trim();
 
 export const formatarTelefoneBR = (telefone) => {
-  if (telefone.length === 11) {
-    // Formato (XX) 9XXXX-XXXX
-    return telefone.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, "($1)$2$3-$4");
-  } else {
-    // Retorna o número original caso não tenha 11 dígitos válidos
+  if (telefone.length !== 11) {
     return telefone;
   }
+  return telefone.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, "($1) $2$3-$4");
 };
 
 export const juntarNomes = (nome, sobrenome) => {
+  if (!nome || !sobrenome) {
+    throw new AppError("Nome e sobrenome são obrigatórios.", 400);
+  }
+
   const nomeFormatado = nome.charAt(0).toUpperCase() + nome.slice(1).toLowerCase();
   const sobrenomeFormatado = sobrenome.charAt(0).toUpperCase() + sobrenome.slice(1).toLowerCase();
 

@@ -7,7 +7,7 @@ import hashSenha from "../utils/hashSenha.js";
 import { autenticarUsuario } from "./UsuariosService.js";
 import AppError from "../utils/AppError.js";
 import gerarToken from "../utils/gerarToken.js";
-import { verificarDuplicidade } from "../utils/verificarDuplicidade.js";
+import verificarDuplicidade from "../utils/verificarDuplicidade.js";
 import { limparTelefone, juntarNomes, formatarTelefoneBR } from "../utils/formatador.js";
 import * as validacao from "../utils/validacao.js";
 
@@ -25,7 +25,7 @@ export const cadastrorSimples = async (dadosCliente) => {
   delete dadosCliente.sobrenome;
 
   // Verifica se o telefone já existe
-  await verificarDuplicidade("telefone", telefone, "cliente");
+  await verificarDuplicidade("telefone", telefone, "cliente", prisma);
 
   // Cria o novo cliente
   const novoCliente = await prisma.cliente.create({
@@ -34,12 +34,22 @@ export const cadastrorSimples = async (dadosCliente) => {
       nome: nomeCompleto,
       telefone,
     },
+    select: {
+      nome: true,
+      telefone: true,
+      logradouro: true,
+      numero: true,
+      bairro: true,
+      cidade: true,
+      estado: true,
+      cep: true,
+    },
   });
 
-  // Formatar o telefone
-  novoCliente.telefone = formatarTelefoneBR(telefone);
-
-  return novoCliente;
+  return {
+    ...novoCliente,
+    telefone: formatarTelefoneBR(novoCliente.telefone),
+  };
 };
 
 // Cadastro completo (online)
@@ -48,21 +58,23 @@ export const cadastroCompleto = async (dadosCliente) => {
   const telefone = limparTelefone(dadosCliente.telefone);
 
   // Validações
+  validacao.validarNome(nome);
+  validacao.validarNome(sobrenome);
   validacao.validarTelefone(telefone);
   validacao.validarEmail(email);
   validacao.validarSenha(senha);
   validacao.validarEndereco(dadosCliente);
-  validacao.validarNome(nome);
-  validacao.validarNome(sobrenome);
   const nomeCompleto = juntarNomes(nome, sobrenome);
   delete dadosCliente.sobrenome;
 
   // Verifica duplicidades
-  await verificarDuplicidade("telefone", telefone, "cliente");
-  await verificarDuplicidade("email", email, "cliente");
+  await Promise.all([
+    verificarDuplicidade("telefone", telefone, "cliente", prisma),
+    verificarDuplicidade("email", email, "cliente", prisma),
+  ]);
 
   // Criptografa a senha
-  const senhaCriptografada = await hashSenha(senha);
+  const senhaCriptografada = await hashSenha(senha.trim());
 
   // Cria o novo cliente
   const novoCliente = await prisma.cliente.create({
@@ -98,7 +110,7 @@ export const login = async (dadosLogin) => {
 };
 
 // metodo para verificar se o cliente já tem conta presencial e transforma em online
-export const cadastroPresencialParaOnline = async (dados) => {
+export const migrarContaPresencialParaOnline = async (dados) => {
   const { email, senha } = dados;
   const telefone = limparTelefone(dados.telefone);
 
@@ -118,7 +130,7 @@ export const cadastroPresencialParaOnline = async (dados) => {
   }
 
   // Verifica se o email já está em uso por outro cliente
-  await verificarDuplicidade("email", email, "cliente");
+  await verificarDuplicidade("email", email, "cliente", prisma);
 
   // Criptografa a senha antes de salvar
   const senhaHash = await hashSenha(senha);
@@ -131,9 +143,9 @@ export const cadastroPresencialParaOnline = async (dados) => {
 };
 
 // Consultar os dados do cliente, metodo usado tanto pelo cliente e pelo funcionario
-export const perfilDoCliente = async (id) => {
+export const obterPerfil = async (id) => {
   // Validações
-  validacao.valdiarId(id);
+  validacao.validarId(id);
 
   const cliente = await prisma.cliente.findUnique({
     where: { id },
@@ -152,17 +164,17 @@ export const perfilDoCliente = async (id) => {
     throw new AppError("Usuário não localizado.", 404);
   }
 
-  // Formatar o telefone
-  cliente.telefone = formatarTelefoneBR(cliente.telefone);
-
-  return cliente;
+  return {
+    ...cliente,
+    telefone: formatarTelefoneBR(cliente.telefone),
+  };
 };
 
-export const atualizaDadosPessoais = async (id, dadosNovos) => {
+export const atualizarDadosPessoais = async (id, dadosNovos) => {
   const { nome, sobrenome, email, senhaAtual, senhaNova } = dadosNovos;
   const telefone = limparTelefone(dadosNovos.telefone);
 
-  validacao.valdiarId(id);
+  validacao.validarId(id);
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
@@ -179,13 +191,13 @@ export const atualizaDadosPessoais = async (id, dadosNovos) => {
 
   if (email && email !== cliente.email) {
     validacao.validarEmail(email);
-    await verificarDuplicidade("email", email, "cliente", "Esse email já está em uso");
+    await verificarDuplicidade("email", email, "cliente", prisma);
     dadosAtualizados.email = email;
   }
 
   if (telefone && telefone !== cliente.telefone) {
     validacao.validarTelefone(telefone);
-    await verificarDuplicidade("telefone", telefone, "cliente", "Esse telefone já está em uso");
+    await verificarDuplicidade("telefone", telefone, "cliente", prisma);
     dadosAtualizados.telefone = telefone;
   }
 
@@ -215,7 +227,7 @@ export const atualizaDadosPessoais = async (id, dadosNovos) => {
 export const atualizarEndereco = async (id, dadosNovos) => {
   const { logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
 
-  validacao.valdiarId(id);
+  validacao.validarId(id);
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
@@ -251,7 +263,7 @@ export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
   const { nome, sobrenome, logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
   const telefone = limparTelefone(dadosNovos.telefone);
 
-  validacao.valdiarId(id);
+  validacao.validarId(id);
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
@@ -268,7 +280,7 @@ export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
 
   if (telefone && telefone !== cliente.telefone) {
     validacao.validarTelefone(telefone);
-    await verificarDuplicidade("telefone", telefone, "cliente");
+    await verificarDuplicidade("telefone", telefone, "cliente", prisma);
     dadosAtualizados.telefone = telefone;
   }
 
@@ -322,11 +334,18 @@ export const verTodosClientes = async (pagina = 1, nome, qtdItensPorPagina) => {
     // skip = serve para "pular" itens já trazidos em páginas anteriores
     skip: (Number(pagina) - 1) * Number(qtdItensPorPagina),
   });
+
+  // Aplicando a formatação no telefone de cada cliente
+  const clientesFormatados = clientes.map((cliente) => ({
+    ...cliente,
+    telefone: formatarTelefoneBR(cliente.telefone),
+  }));
+
   // Diz o total de itens encontrados
   const contador = await prisma.cliente.count({ where });
 
   return {
-    clientes,
+    clientes: clientesFormatados,
     qtdTotalDePaginas: Math.ceil(contador / qtdItensPorPagina),
     paginaAtual: Number(pagina),
   };

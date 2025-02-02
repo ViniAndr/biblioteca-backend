@@ -1,9 +1,6 @@
 import AppError from "./AppError.js";
-import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
-
-export const verificarDuplicidade = async (campo, valor, entidade, msg) => {
+export default async (campo, valor, entidade, prisma) => {
   if (!campo || !valor || !entidade) {
     throw new AppError("Parâmetros para verificação de duplicidade estão faltando", 500);
   }
@@ -12,9 +9,7 @@ export const verificarDuplicidade = async (campo, valor, entidade, msg) => {
     where: { [campo]: valor },
   });
 
-  if (registroExiste && msg) {
-    throw new AppError(msg, 409);
-  } else {
-    throw new AppError(`O ${campo} já está cadastrado para a entidade ${entidade}`, 409);
+  if (registroExiste) {
+    throw new AppError(`Esse ${campo} já está em uso`, 409);
   }
 };

@@ -1,5 +1,8 @@
 import express from "express";
 
+// Middleware
+import handleErrors from "./src/middlewares/handleErrors.js";
+
 // Routes
 import clienteRoutes from "./src/routes/clienteRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
@@ -15,6 +18,7 @@ class App {
   middlewares() {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
+    this.app.use(handleErrors); // Middleware de erro global
   }
 
   routes() {
