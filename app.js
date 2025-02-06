@@ -7,6 +7,7 @@ import handleErrors from "./src/middlewares/handleErrors.js";
 import clienteRoutes from "./src/routes/clienteRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
 import funcionarioRoutes from "./src/routes/funcionarioRoutes.js";
+import atributosRoutes from "./src/routes/atributosRoutes.js";
 
 class App {
   constructor() {
@@ -25,6 +26,7 @@ class App {
     this.app.use("/cliente", clienteRoutes);
     this.app.use("/admin", adminRoutes);
     this.app.use("/funcionario", funcionarioRoutes);
+    this.app.use("/livro", atributosRoutes);
   }
 }
 
