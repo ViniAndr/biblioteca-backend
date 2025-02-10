@@ -16,7 +16,7 @@ router.post("/cadastro/:entidade", authMiddleware, validarEntidade, controller.c
 router.get("/listar/:entidade", authMiddleware, validarEntidade, controller.obterTodos);
 
 // Atualizar um categoria por ID (Funcionario)
-router.put("/atualizar/:entidade", authMiddleware, validarEntidade, controller.editar);
+router.put("/atualizar/:entidade/:id", authMiddleware, validarEntidade, controller.editar);
 
 // Deletar uma cátegoria (Funcionario)
 router.delete("/deletar/:entidade/:id", authMiddleware, validarEntidade, controller.deletar);

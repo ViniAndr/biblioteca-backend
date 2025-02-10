@@ -8,6 +8,7 @@ import clienteRoutes from "./src/routes/clienteRoutes.js";
 import adminRoutes from "./src/routes/adminRoutes.js";
 import funcionarioRoutes from "./src/routes/funcionarioRoutes.js";
 import atributosRoutes from "./src/routes/atributosRoutes.js";
+import livroRoutes from "./src/routes/livroRoutes.js";
 
 class App {
   constructor() {
@@ -27,6 +28,7 @@ class App {
     this.app.use("/admin", adminRoutes);
     this.app.use("/funcionario", funcionarioRoutes);
     this.app.use("/livro", atributosRoutes);
+    this.app.use("/livro", livroRoutes);
   }
 }
 

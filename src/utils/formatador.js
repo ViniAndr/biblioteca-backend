@@ -1,6 +1,7 @@
 import AppError from "./AppError.js";
 
-export const limparTelefone = (telefone) => telefone.replace(/\D/g, "").trim();
+// Remove qualquer caractere que não seja numero
+export const limparNumeros = (telefone) => telefone.replace(/\D/g, "").trim();
 
 export const formatarTelefoneBR = (telefone) => {
   if (telefone.length !== 11) {

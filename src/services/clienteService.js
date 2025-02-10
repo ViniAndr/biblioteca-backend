@@ -8,13 +8,13 @@ import { autenticarUsuario } from "./UsuariosService.js";
 import AppError from "../utils/AppError.js";
 import gerarToken from "../utils/gerarToken.js";
 import verificarDuplicidade from "../utils/verificarDuplicidade.js";
-import { limparTelefone, juntarNomes, formatarTelefoneBR } from "../utils/formatador.js";
+import { limparNumeros, juntarNomes, formatarTelefoneBR } from "../utils/formatador.js";
 import * as validacao from "../utils/validacao.js";
 
 // Cadastro simples (presencial) feito pelo funcionario
 export const cadastrorSimples = async (dadosCliente) => {
   const { nome, sobrenome } = dadosCliente;
-  const telefone = limparTelefone(dadosCliente.telefone);
+  const telefone = limparNumeros(dadosCliente.telefone);
 
   // Validações
   validacao.validarTelefone(telefone);
@@ -55,7 +55,7 @@ export const cadastrorSimples = async (dadosCliente) => {
 // Cadastro completo (online)
 export const cadastroCompleto = async (dadosCliente) => {
   const { email, senha, nome, sobrenome } = dadosCliente;
-  const telefone = limparTelefone(dadosCliente.telefone);
+  const telefone = limparNumeros(dadosCliente.telefone);
 
   // Validações
   validacao.validarNome(nome);
@@ -112,7 +112,7 @@ export const login = async (dadosLogin) => {
 // metodo para verificar se o cliente já tem conta presencial e transforma em online
 export const migrarContaPresencialParaOnline = async (dados) => {
   const { email, senha } = dados;
-  const telefone = limparTelefone(dados.telefone);
+  const telefone = limparNumeros(dados.telefone);
 
   // Validações
   validacao.validarTelefone(telefone);
@@ -172,7 +172,7 @@ export const obterPerfil = async (id) => {
 
 export const atualizarDadosPessoais = async (id, dadosNovos) => {
   const { nome, sobrenome, email, senhaAtual, senhaNova } = dadosNovos;
-  const telefone = limparTelefone(dadosNovos.telefone);
+  const telefone = limparNumeros(dadosNovos.telefone);
 
   validacao.validarId(id);
 
@@ -261,7 +261,7 @@ export const atualizarEndereco = async (id, dadosNovos) => {
 
 export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
   const { nome, sobrenome, logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
-  const telefone = limparTelefone(dadosNovos.telefone);
+  const telefone = limparNumeros(dadosNovos.telefone);
 
   validacao.validarId(id);
 

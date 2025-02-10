@@ -11,8 +11,9 @@ export const criar = async (req, res, next) => {
 
 export const obterTodos = async (req, res, next) => {
   try {
-    const { nome, pagina, qtdItensPorPagina } = req.query;
-    const resultado = await service.obterTodos(req.entidade, nome, pagina, qtdItensPorPagina);
+    const { nome, pagina, qtdItensPorPagina = 10 } = req.query;
+    const itensPorPagina = Number(qtdItensPorPagina);
+    const resultado = await service.obterTodos(req.entidade, nome, pagina, itensPorPagina);
     return res.json(resultado);
   } catch (error) {
     next(error);
@@ -21,7 +22,7 @@ export const obterTodos = async (req, res, next) => {
 
 export const editar = async (req, res, next) => {
   try {
-    await service.editar(req.entidade, req.body);
+    await service.editar(req.entidade, req.params.id, req.body);
     return res.json({ message: `${req.entidade} editado com sucesso` });
   } catch (error) {
     next(error);

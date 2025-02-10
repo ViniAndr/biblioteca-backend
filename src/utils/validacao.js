@@ -1,9 +1,9 @@
 import AppError from "./AppError.js";
 
 // Valida o ID (não vazio, numérico e válido)
-export const validarId = (id) => {
+export const validarId = (id, entidade) => {
   if (!id || isNaN(Number(id)) || Number(id) < 1 || !Number.isInteger(Number(id))) {
-    throw new AppError("ID inválido. Deve ser um número inteiro positivo", 400);
+    throw new AppError(`O ID ${entidade ? `de ${entidade} ` : ""}deve ser um número inteiro válido.`, 400);
   }
 };
 
@@ -76,4 +76,33 @@ export const validarEndereco = ({ logradouro, bairro, cidade, estado, cep }) => 
 
   validarCEP(cep);
   validarEstado(estado);
+};
+
+export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, autorId, editoraId, categoriaId }) => {
+  if (!titulo || titulo.trim().length < 3) {
+    throw new AppError("O título do livro é obrigatório e deve ter pelo menos 3 caracteres.", 400);
+  }
+
+  if (!isbn || !/^\d{13}$/.test(isbn)) {
+    throw new AppError("O ISBN deve conter exatamente 13 dígitos numéricos.", 400);
+  }
+
+  if (!Number.isInteger(qtdCopias) || qtdCopias < 1) {
+    throw new AppError("A quantidade de cópias deve ser um número inteiro maior que zero.", 400);
+  }
+
+  if (!Number.isInteger(qtdDisponivel) || qtdDisponivel < 0 || qtdDisponivel > qtdCopias) {
+    throw new AppError(
+      "A quantidade disponível deve ser um número inteiro entre 0 e a quantidade total de cópias.",
+      400
+    );
+  }
+
+  if (!Number.isInteger(edicao) || edicao < 1) {
+    throw new AppError("A edição do livro é obrigatória.", 400);
+  }
+
+  validarId(autorId, "autor");
+  validarId(editoraId, "editora");
+  validarId(categoriaId, "categoria");
 };

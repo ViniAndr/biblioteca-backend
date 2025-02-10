@@ -7,20 +7,24 @@ import AppError from "../utils/AppError.js";
 
 // Criar - autro, categoria ou editora
 export const criar = async (entidade, dados) => {
-  const { nome, livro } = dados;
-
+  const { nome } = dados;
   validarNome(nome);
-  validarId(livro);
 
-  const buscarLivro = await prisma.livro.findUnique({ where: { id: livro } });
-  if (!buscarLivro) throw new AppError("Livro não econtrado", 404);
+  const buscarPorNome = await prisma[entidade].findUnique({ where: { nome } });
+  if (buscarPorNome)
+    throw new AppError(
+      `${entidade == "autor" ? "Esse" : "Essa"} ${entidade} já está ${
+        entidade == "autor" ? "cadastrado" : "cadastrada"
+      }`,
+      400
+    );
 
   await prisma[entidade].create({ data: dados });
 };
 
 // Porque não obter um? o front vai receber todos, logo pode pegar um sem solicitar ao back
 
-export const obterTodos = async (entidade, nome, pagina = 1, qtdItensPorPagina) => {
+export const obterTodos = async (entidade, nome, pagina = 1, itensPorPagina) => {
   const where = {};
 
   if (nome) {
@@ -38,8 +42,8 @@ export const obterTodos = async (entidade, nome, pagina = 1, qtdItensPorPagina) 
         select: { livros: true }, // Conta quantos livros cada autor tem
       },
     },
-    take: Number(qtdItensPorPagina),
-    skip: (Number(pagina) - 1) * Number(qtdItensPorPagina),
+    take: Number(itensPorPagina),
+    skip: (Number(pagina) - 1) * Number(itensPorPagina),
   });
 
   // Conta o total de autores para paginação
@@ -47,13 +51,14 @@ export const obterTodos = async (entidade, nome, pagina = 1, qtdItensPorPagina) 
 
   return {
     [entidade]: todos,
-    qtdTotalDePaginas: Math.ceil(contador / qtdItensPorPagina),
+    qtdTotalDePaginas: Math.ceil(contador / itensPorPagina),
     paginaAtual: Number(pagina),
   };
 };
 
-export const editar = async (entidade, dados) => {
-  const buscar = await prisma[entidade].findUnique({ where: { id: dados.id } });
+export const editar = async (entidade, id, dados) => {
+  validarId(id);
+  const buscar = await prisma[entidade].findUnique({ where: { id: Number(id) } });
   if (!buscar) throw new AppError(`${entidade} não existe`, 404);
 
   const dadosNovos = {};
@@ -67,12 +72,13 @@ export const editar = async (entidade, dados) => {
   }
 
   await prisma[entidade].update({
-    where: { id: dados.id },
+    where: { id: Number(id) },
     data: { ...dadosNovos },
   });
 };
 
 export const deletar = async (entidade, id) => {
+  validarId(id);
   const buscar = await prisma[entidade].findUnique({ where: { id } });
   if (!buscar) throw new AppError(`${entidade} não existe`, 404);
 
