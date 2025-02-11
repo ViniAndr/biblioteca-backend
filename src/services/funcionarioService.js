@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 // Utils
 import hashSenha from "../utils/hashSenha.js";
-import { validarEmail, validarSenha, validarId, validarNome } from "../utils/validacao.js";
+import { validarEmail, validarSenha, validarNome } from "../utils/validacao.js";
 import { autenticarUsuario } from "./UsuariosService.js";
 import AppError from "../utils/AppError.js";
 import gerarToken from "../utils/gerarToken.js";
@@ -65,22 +65,22 @@ export const login = async (dados) => {
 };
 
 export const obterPerfil = async (id) => {
-  validarId(id);
-  return await prisma.funcionario.findUnique({
+  const funcionario = await prisma.funcionario.findUnique({
     where: { id },
     select: {
       nome: true,
       email: true,
     },
   });
+  if (!funcionario) throw new AppError("Funcionário não localizado.", 404);
+
+  return funcionario;
 };
 
 export const atualizarDados = async (id, dados) => {
   const { nome, sobrenome, email, senhaAtual, senhaNova } = dados;
 
   const dadosNovos = {};
-  // Validações
-  validarId(id);
 
   const funcionario = await prisma.funcionario.findUnique({ where: { id } });
   if (!funcionario) {

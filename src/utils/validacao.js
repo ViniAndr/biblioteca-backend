@@ -1,12 +1,5 @@
 import AppError from "./AppError.js";
 
-// Valida o ID (não vazio, numérico e válido)
-export const validarId = (id, entidade) => {
-  if (!id || isNaN(Number(id)) || Number(id) < 1 || !Number.isInteger(Number(id))) {
-    throw new AppError(`O ID ${entidade ? `de ${entidade} ` : ""}deve ser um número inteiro válido.`, 400);
-  }
-};
-
 // Valida o nome e sobrenome
 export const validarNome = (nome) => {
   if (!nome || typeof nome !== "string") {

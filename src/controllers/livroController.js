@@ -13,8 +13,9 @@ export const cadastrado = async (req, res, next) => {
 };
 
 export const atualizar = async (req, res, next) => {
+  const id = Number(req.params.id);
   try {
-    await livroService.atualizar(req.params.id, req.body);
+    await livroService.atualizar(id, req.body);
     return res.status(200).json({ mensagem: "Livro atualizado com sucesso" });
   } catch (error) {
     next(error);
@@ -22,8 +23,9 @@ export const atualizar = async (req, res, next) => {
 };
 
 export const deletar = async (req, res, next) => {
+  const id = Number(req.params.id);
   try {
-    await livroService.deletar(req.params.id);
+    await livroService.deletar(id);
     return res.status(200).json({ mensagem: "Livro deletado com sucesso" });
   } catch (error) {
     next(error);
@@ -43,8 +45,9 @@ export const listarTodos = async (req, res, next) => {
 };
 
 export const obterPorId = async (req, res, next) => {
+  const id = Number(req.params.id);
   try {
-    const livro = await livroService.obterLivro(req.params.id);
+    const livro = await livroService.obterLivro(id);
     return res.status(200).json(livro);
   } catch (error) {
     next(error);

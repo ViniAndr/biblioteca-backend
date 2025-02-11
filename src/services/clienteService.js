@@ -144,9 +144,6 @@ export const migrarContaPresencialParaOnline = async (dados) => {
 
 // Consultar os dados do cliente, metodo usado tanto pelo cliente e pelo funcionario
 export const obterPerfil = async (id) => {
-  // Validações
-  validacao.validarId(id);
-
   const cliente = await prisma.cliente.findUnique({
     where: { id },
     select: {
@@ -173,8 +170,6 @@ export const obterPerfil = async (id) => {
 export const atualizarDadosPessoais = async (id, dadosNovos) => {
   const { nome, sobrenome, email, senhaAtual, senhaNova } = dadosNovos;
   const telefone = limparNumeros(dadosNovos.telefone);
-
-  validacao.validarId(id);
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
@@ -227,8 +222,6 @@ export const atualizarDadosPessoais = async (id, dadosNovos) => {
 export const atualizarEndereco = async (id, dadosNovos) => {
   const { logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
 
-  validacao.validarId(id);
-
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
     throw new AppError("Cliente não encontrado.", 404);
@@ -262,8 +255,6 @@ export const atualizarEndereco = async (id, dadosNovos) => {
 export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
   const { nome, sobrenome, logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
   const telefone = limparNumeros(dadosNovos.telefone);
-
-  validacao.validarId(id);
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {

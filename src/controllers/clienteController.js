@@ -54,7 +54,7 @@ export const verificaCadastroPresencial = async (req, res, next) => {
 };
 
 export const verPerfil = async (req, res, next) => {
-  const clienteId = req.usuarioId;
+  const clienteId = Number(req.usuarioId);
 
   try {
     const dadosCliente = await clienteService.obterPerfil(clienteId);
@@ -76,7 +76,7 @@ export const obterPorId = async (req, res, next) => {
 };
 
 export const atualizarPerfil = async (req, res, next) => {
-  const clienteId = req.usuarioId;
+  const clienteId = Number(req.usuarioId);
   try {
     await clienteService.atualizarDadosPessoais(clienteId, req.body);
     return res.status(200).json({ mensagem: "Dados atualizado com sucesso" });
@@ -86,7 +86,7 @@ export const atualizarPerfil = async (req, res, next) => {
 };
 
 export const atualizarEndereco = async (req, res, next) => {
-  const clienteId = req.usuarioId;
+  const clienteId = Number(req.usuarioId);
   try {
     await clienteService.atualizarEndereco(clienteId, req.body);
     return res.status(200).json({ mensagem: "Endereço atualizado com sucesso" });

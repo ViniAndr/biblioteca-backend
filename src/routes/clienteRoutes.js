@@ -7,6 +7,7 @@ import * as clienteController from "../controllers/clienteController.js";
 // midllewares
 import authMiddleware from "../middlewares/authMiddleware.js";
 import handleErrors from "../middlewares/handleErrors.js";
+import validarId from "../middlewares/validarId.js";
 
 /* verifica se o CLIENTE já tem o cadastro simples e atualiza adicionando o email e senha,
    caso não tenha, ele fará um cadastro completo. */
@@ -31,13 +32,13 @@ router.put("/atualizar-dados", authMiddleware, clienteController.atualizarPerfil
 router.put("/atualizar-endereco", authMiddleware, clienteController.atualizarEndereco);
 
 // atualizar todos os dados do cliente, porem quem faz isso é o funcionario.
-router.put("/atualizar-cliente/:id", authMiddleware, clienteController.atualizaPorId);
+router.put("/atualizar-cliente/:id", authMiddleware, validarId, clienteController.atualizaPorId);
 
 // listar todos os clientes (Funcionario).
 router.get("/listar", authMiddleware, clienteController.listarTodos);
 
 // ver informações de um cliente por ID (Funcionario).
-router.get("/:id", clienteController.obterPorId);
+router.get("/:id", validarId, clienteController.obterPorId);
 
 // Middleware global de tratamento de erros
 router.use(handleErrors);

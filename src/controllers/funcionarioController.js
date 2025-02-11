@@ -27,7 +27,7 @@ export const login = async (req, res, next) => {
 
 // método para o proprio funcionario ver seu perfil
 export const verPerfil = async (req, res, next) => {
-  const funcionarioId = req.usuarioId;
+  const funcionarioId = Number(req.usuarioId);
   try {
     const dados = await funcionarioService.obterPerfil(funcionarioId);
     res.status(200).json(dados);
@@ -38,7 +38,7 @@ export const verPerfil = async (req, res, next) => {
 
 // Método para o proprio funcionario atualizar seu perfil
 export const atualizarPerfil = async (req, res, next) => {
-  const funcionarioId = req.usuarioId;
+  const funcionarioId = Number(req.usuarioId);
   try {
     await funcionarioService.atualizarDados(funcionarioId, req.body);
     res.status(200).json({

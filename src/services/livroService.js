@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-import { validarLivro, validarId } from "../utils/validacao.js";
+import { validarLivro } from "../utils/validacao.js";
 import AppError from "../utils/AppError.js";
 import { limparNumeros } from "../utils/formatador.js";
 
@@ -28,63 +28,42 @@ export const cadastrado = async (dados) => {
 };
 
 export const atualizar = async (id, dados) => {
-  validarId(id);
-  const { titulo, isbn, qtdCopias, qtdDisponivel, edicao, autorId, editoraId, categoriaId } = dados;
+  const campos = Object.keys(dados);
 
-  const livro = await prisma.livro.findUnique({ where: { id: Number(id) } });
-  if (!livro) throw new AppError("Livro não contrado", 404);
+  const livro = await prisma.livro.findUnique({ where: { id } });
+  if (!livro) throw new AppError("Livro não encontrado", 404);
 
-  const dadosNovos = {};
+  const dadosNovos = campos.reduce((obj, campo) => {
+    if (dados[campo] === undefined || dados[campo] === livro[campo]) {
+      return obj; // Ignora valores iguais ou não definidos
+    }
 
-  if (titulo && titulo.trim() && livro.titulo !== titulo) {
-    dadosNovos.titulo = titulo.trim();
-  }
+    if (campo === "titulo") {
+      obj[campo] = dados[campo].trim();
+    } else if (campo === "isbn") {
+      obj[campo] = limparNumeros(dados[campo].trim());
+    } else {
+      obj[campo] = Number(dados[campo]); // Se não for título nem ISBN, é número
+    }
 
-  if (isbn && isbn.trim() && livro.isbn !== limparNumeros(isbn)) {
-    dadosNovos.isbn = limparNumeros(isbn.trim());
-  }
-
-  if (Number.isInteger(qtdCopias) && qtdCopias > 0 && livro.qtdCopias !== qtdCopias) {
-    dadosNovos.qtdCopias = qtdCopias;
-  }
-
-  if (Number.isInteger(qtdDisponivel) && qtdDisponivel >= 0 && livro.qtdDisponivel !== qtdDisponivel) {
-    dadosNovos.qtdDisponivel = qtdDisponivel;
-  }
-
-  if (Number.isInteger(edicao) && edicao > 0 && livro.edicao !== edicao) {
-    dadosNovos.edicao = edicao;
-  }
-
-  if (Number.isInteger(autorId) && autorId > 0 && livro.autorId !== autorId) {
-    dadosNovos.autorId = autorId;
-  }
-
-  if (Number.isInteger(editoraId) && editoraId > 0 && livro.editoraId !== editoraId) {
-    dadosNovos.editoraId = editoraId;
-  }
-
-  if (Number.isInteger(categoriaId) && categoriaId > 0 && livro.categoriaId !== categoriaId) {
-    dadosNovos.categoriaId = categoriaId;
-  }
+    return obj;
+  }, {});
 
   if (Object.keys(dadosNovos).length === 0) {
     throw new AppError("Nenhum dado válido para atualizar.", 400);
   }
 
   await prisma.livro.update({
-    where: { id: Number(id) },
-    data: { ...dadosNovos },
+    where: { id },
+    data: dadosNovos,
   });
 };
 
 export const deletar = async (id) => {
-  validarId(id);
+  const livro = await prisma.livro.findUnique({ where: { id } });
+  if (!livro) throw new AppError("Livro não encontrado", 404);
 
-  const livro = await prisma.livro.findUnique({ where: { id: Number(id) } });
-  if (!livro) throw new AppError("Livro não contrado", 404);
-
-  await prisma.livro.delete({ where: { id: Number(id) } });
+  await prisma.livro.delete({ where: { id } });
 };
 
 export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina = 1, itensPorPagina) => {
@@ -122,9 +101,8 @@ export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina 
 };
 
 export const obterLivro = async (id) => {
-  validarId(id);
   const livro = await prisma.livro.findUnique({
-    where: { id: Number(id) },
+    where: { id },
     include: {
       autor: true,
       editora: true,

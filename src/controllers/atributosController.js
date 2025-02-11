@@ -21,8 +21,9 @@ export const obterTodos = async (req, res, next) => {
 };
 
 export const editar = async (req, res, next) => {
+  const id = Number(req.params.id);
   try {
-    await service.editar(req.entidade, req.params.id, req.body);
+    await service.editar(req.entidade, id, req.body);
     return res.json({ message: `${req.entidade} editado com sucesso` });
   } catch (error) {
     next(error);
@@ -30,8 +31,9 @@ export const editar = async (req, res, next) => {
 };
 
 export const deletar = async (req, res, next) => {
+  const id = Number(req.params.id);
   try {
-    await service.deletar(req.entidade, Number(req.params.id));
+    await service.deletar(req.entidade, id);
     return res.json({ message: `${req.entidade} deletado com sucesso` });
   } catch (error) {
     next(error);

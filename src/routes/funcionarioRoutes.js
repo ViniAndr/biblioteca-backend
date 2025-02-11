@@ -7,6 +7,7 @@ import * as funcionarioController from "../controllers/funcionarioController.js"
 // midllewares
 import authMiddleware from "../middlewares/authMiddleware.js";
 import handleErrors from "../middlewares/handleErrors.js";
+import validarId from "../middlewares/validarId.js";
 
 // Criar conta, que é feito apenas pelo ADMIN
 router.post("/cadastro", authMiddleware, funcionarioController.criarConta);
@@ -24,7 +25,7 @@ router.get("/perfil", authMiddleware, funcionarioController.verPerfil);
 router.get("/listar", authMiddleware, funcionarioController.listarTodos);
 
 // Obter dados de um funcionario - ADMIN
-router.get("/:id", authMiddleware, funcionarioController.obterPorId);
+router.get("/:id", authMiddleware, validarId, funcionarioController.obterPorId);
 
 // Desativar/Deletar conta, feita apenas pelo ADMIN
 // deixo ID opcional na tebal emprestimo?

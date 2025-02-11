@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // utils
-import { validarNome, validarId } from "../utils/validacao.js";
+import { validarNome } from "../utils/validacao.js";
 import AppError from "../utils/AppError.js";
 
 // Criar - autro, categoria ou editora
@@ -57,8 +57,7 @@ export const obterTodos = async (entidade, nome, pagina = 1, itensPorPagina) => 
 };
 
 export const editar = async (entidade, id, dados) => {
-  validarId(id);
-  const buscar = await prisma[entidade].findUnique({ where: { id: Number(id) } });
+  const buscar = await prisma[entidade].findUnique({ where: { id } });
   if (!buscar) throw new AppError(`${entidade} não existe`, 404);
 
   const dadosNovos = {};
@@ -72,13 +71,12 @@ export const editar = async (entidade, id, dados) => {
   }
 
   await prisma[entidade].update({
-    where: { id: Number(id) },
+    where: { id },
     data: { ...dadosNovos },
   });
 };
 
 export const deletar = async (entidade, id) => {
-  validarId(id);
   const buscar = await prisma[entidade].findUnique({ where: { id } });
   if (!buscar) throw new AppError(`${entidade} não existe`, 404);
 
