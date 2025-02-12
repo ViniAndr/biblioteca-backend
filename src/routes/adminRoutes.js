@@ -7,6 +7,7 @@ import * as adminController from "../controllers/adminController.js";
 // midllewares
 import authMiddleware from "../middlewares/authMiddleware.js";
 import handleErrors from "../middlewares/handleErrors.js";
+import controleAcesso from "../middlewares/controleAcesso.js";
 
 // criar conta **SERÁ FEITO PELO DEV, UMA ÚNICA CONTA COM CREDENCIAIS PADRÕES**
 router.post("/cadastro", adminController.criarConta);
@@ -15,13 +16,13 @@ router.post("/cadastro", adminController.criarConta);
 router.post("/login", adminController.login);
 
 // ver perfil
-router.get("/perfil", authMiddleware, adminController.verPerfil);
+router.get("/perfil", authMiddleware, controleAcesso("admin"), adminController.verPerfil);
 
 // atualizar dados de registro
-router.put("/atualizar", authMiddleware, adminController.atualizarPerfil);
+router.put("/atualizar", authMiddleware, controleAcesso("admin"), adminController.atualizarPerfil);
 
 // resetar conta
-router.get("/resetar-conta", authMiddleware, adminController.resetarConta);
+router.get("/resetar-conta", authMiddleware, controleAcesso("admin"), adminController.resetarConta);
 
 // Middleware global de tratamento de erros
 router.use(handleErrors);

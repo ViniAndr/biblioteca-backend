@@ -8,24 +8,25 @@ import * as funcionarioController from "../controllers/funcionarioController.js"
 import authMiddleware from "../middlewares/authMiddleware.js";
 import handleErrors from "../middlewares/handleErrors.js";
 import validarId from "../middlewares/validarId.js";
+import controleAcesso from "../middlewares/controleAcesso.js";
 
 // Criar conta, que é feito apenas pelo ADMIN
-router.post("/cadastro", authMiddleware, funcionarioController.criarConta);
+router.post("/cadastro", authMiddleware, controleAcesso("admin"), funcionarioController.criarConta);
 
 // Login
 router.post("/login", funcionarioController.login);
 
 // Alterar dados da conta
-router.put("/atualizar", authMiddleware, funcionarioController.atualizarPerfil);
+router.put("/atualizar", authMiddleware, controleAcesso("funcionario"), funcionarioController.atualizarPerfil);
 
 // Ver perfil
-router.get("/perfil", authMiddleware, funcionarioController.verPerfil);
+router.get("/perfil", authMiddleware, controleAcesso("funcionario"), funcionarioController.verPerfil);
 
 // Obter todos os funcionarios - ADMIN
-router.get("/listar", authMiddleware, funcionarioController.listarTodos);
+router.get("/listar", authMiddleware, controleAcesso("admin"), funcionarioController.listarTodos);
 
 // Obter dados de um funcionario - ADMIN
-router.get("/:id", authMiddleware, validarId, funcionarioController.obterPorId);
+router.get("/:id", authMiddleware, validarId, controleAcesso("admin"), funcionarioController.obterPorId);
 
 // Desativar/Deletar conta, feita apenas pelo ADMIN
 // deixo ID opcional na tebal emprestimo?

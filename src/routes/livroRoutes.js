@@ -8,20 +8,21 @@ import * as controller from "../controllers/livroController.js";
 import handleErrors from "../middlewares/handleErrors.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import validarId from "../middlewares/validarId.js";
+import controleAcesso from "../middlewares/controleAcesso.js";
 
 // Criar livro
-router.post("/cadastro", authMiddleware, controller.cadastrado);
+router.post("/cadastro", authMiddleware, controleAcesso("funcionario"), controller.cadastrado);
 
 // editar livro
-router.put("/atualizar/:id", authMiddleware, validarId, controller.atualizar);
+router.put("/atualizar/:id", authMiddleware, controleAcesso("funcionario"), validarId, controller.atualizar);
 
 // deletar
-router.delete("/deletar/:id", authMiddleware, validarId, controller.deletar);
+router.delete("/deletar/:id", authMiddleware, controleAcesso("funcionario"), validarId, controller.deletar);
 
-// listar todos livros
+// listar todos livros (Todos, até não logado)
 router.get("/listar", authMiddleware, controller.listarTodos);
 
-// obter 1 livro
+// obter 1 livro (Todos, até não logado)
 router.get("/:id", authMiddleware, validarId, controller.obterPorId);
 
 // Middleware global de tratamento de erros
