@@ -191,3 +191,23 @@ export const cancelarSolicitacao = async (clienteId, emprestimoId) => {
 
   await incrementarLivroDisponivel(emprestimo.livroId);
 };
+
+// O cliente ir buscar o livro após solicitar o emprestimo
+export const confirmarRetirada = async (emprestimoId, funcionarioId) => {
+  // Ids já vem validado do Middleware
+  const emprestimoExiste = await prisma.emprestimo.findUnique({ where: { id: emprestimoId } });
+  if (!emprestimoExiste) throw new AppError("Não foi possivel localizar essa emprestimo", 400);
+  if (emprestimoExiste.status !== "SOLICITADO") {
+    throw new AppError("Emprestimo indisponível para retirada.", 400);
+  }
+
+  return await prisma.emprestimo.update({
+    where: { id: emprestimoId },
+    data: {
+      status: "EMPRESTADO",
+      dataEmprestimo: new Date(),
+      prazoDevolucao: calcularDataDevolucao(8),
+      funcionarioId,
+    },
+  });
+};
