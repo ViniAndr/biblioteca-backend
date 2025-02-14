@@ -9,6 +9,7 @@ import adminRoutes from "./src/routes/adminRoutes.js";
 import funcionarioRoutes from "./src/routes/funcionarioRoutes.js";
 import atributosRoutes from "./src/routes/atributosRoutes.js";
 import livroRoutes from "./src/routes/livroRoutes.js";
+import emprestimoRoutes from "./src/routes/emprestimoRoutes.js";
 
 class App {
   constructor() {
@@ -29,6 +30,7 @@ class App {
     this.app.use("/funcionario", funcionarioRoutes);
     this.app.use("/livro", atributosRoutes);
     this.app.use("/livro", livroRoutes);
+    this.app.use("/emprestimo", emprestimoRoutes);
   }
 }
 

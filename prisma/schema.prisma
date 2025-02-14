@@ -72,27 +72,32 @@ model Livro {
 }
 
 model Emprestimo {
-  id              Int          @id @default(autoincrement())
-  status          String
-  dataEmprestimo  DateTime
-  dataDevolucao   DateTime
+  id              Int               @id @default(autoincrement())
+  status          StatusEmprestimo      @default(SOLICITADO) // Começa sempre como 'SOLICITADO'
+  dataSolicitacao DateTime              @default(now()) // Data da solicitação
+  prazoRetirada   DateTime              @default(now()) // Último dia que o cliente pode retirar o livro
+  dataEmprestimo  DateTime? // Só será preenchida se for aprovado
+  prazoDevolucao  DateTime? // Só será preencido
+  dataDevolucao   DateTime? // Só será preenchida se na devolução
+  estadoDevolucao String? // Relatar como o livro foi devolvido
 
   // Relacionamento com Cliente
   clienteId       Int
-  cliente         Cliente      @relation(fields: [clienteId], references: [id])
+  cliente         Cliente           @relation(fields: [clienteId], references: [id])
 
   // Relacionamento com Funcionario
   funcionarioId   Int?
-  funcionario     Funcionario? @relation(fields: [funcionarioId], references: [id])
+  funcionario     Funcionario?      @relation(fields: [funcionarioId], references: [id])
 
   // Relacionamento com Livro
   livroId         Int
-  livro           Livro        @relation(fields: [livroId], references: [id])
+  livro           Livro             @relation(fields: [livroId], references: [id])
 
 
   // Chave composta - impede que um cliente pegue o mesmo livro mais de uma vez no mesmo dia
   @@unique([clienteId, livroId, dataEmprestimo])
 }
+
 
 model Editora {
   id        Int      @id @default(autoincrement())
@@ -116,4 +121,12 @@ model Categoria {
 
   // Relacionamento com Livro
   livros    Livro[]
+}
+
+enum StatusEmprestimo {
+  SOLICITADO
+  APROVADO
+  NEGADO
+  EMPRESTADO
+  DEVOLVIDO
 }
