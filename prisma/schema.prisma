@@ -72,14 +72,15 @@ model Livro {
 }
 
 model Emprestimo {
-  id              Int               @id @default(autoincrement())
-  status          StatusEmprestimo      @default(SOLICITADO) // Começa sempre como 'SOLICITADO'
-  dataSolicitacao DateTime              @default(now()) // Data da solicitação
-  prazoRetirada   DateTime              @default(now()) // Último dia que o cliente pode retirar o livro
-  dataEmprestimo  DateTime? // Só será preenchida se for aprovado
-  prazoDevolucao  DateTime? // Só será preencido
-  dataDevolucao   DateTime? // Só será preenchida se na devolução
-  estadoDevolucao String? // Relatar como o livro foi devolvido
+  id                Int               @id @default(autoincrement())
+  status            StatusEmprestimo      @default(SOLICITADO) // Começa sempre como 'SOLICITADO'
+  dataSolicitacao   DateTime              @default(now()) // Data da solicitação
+  prazoRetirada     DateTime              @default(now()) // Último dia que o cliente pode retirar o livro
+  dataEmprestimo    DateTime? // Só será preenchida se for aprovado
+  prazoDevolucao    DateTime? // Só será preencido
+  dataDevolucao     DateTime? // Só será preenchida se na devolução
+  estadoDevolucao   String? // Relatar como o livro foi devolvido
+  dataCancelamento  DateTime?
 
   // Relacionamento com Cliente
   clienteId       Int
@@ -125,8 +126,8 @@ model Categoria {
 
 enum StatusEmprestimo {
   SOLICITADO
-  APROVADO
-  NEGADO
+  CANCELADO
   EMPRESTADO
   DEVOLVIDO
+  ATRASADO
 }

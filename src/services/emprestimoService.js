@@ -76,6 +76,13 @@ async function decrementarLivroDisponivel(livroId) {
   });
 }
 
+async function incrementarLivroDisponivel(livroId) {
+  await prisma.livro.update({
+    where: { id: livroId },
+    data: { qtdDisponivel: { increment: 1 } },
+  });
+}
+
 // Cliente pode solicitar um emprestimo e terá um prazo para ir buscar o livro
 export const solicitarEmprestimo = async (clienteId, livroId) => {
   validarId(clienteId, "cliente");
@@ -159,4 +166,28 @@ export const fazerEmprestimo = async (funcionarioId, dados) => {
 
     return novoEmprestimo;
   });
+};
+
+// Caso o cliente desista da solicitacao pode cancelar.
+export const cancelarSolicitacao = async (clienteId, emprestimoId) => {
+  // ID ja esta validado pelo middlware
+
+  const emprestimo = await prisma.emprestimo.findUnique({
+    where: {
+      id: emprestimoId,
+      clienteId: clienteId,
+      status: "SOLICITADO",
+    },
+  });
+  if (!emprestimo) throw new AppError("Solicitação não encontrada", 400);
+
+  await prisma.emprestimo.update({
+    where: { id: emprestimoId },
+    data: {
+      status: "CANCELADO",
+      dataCancelamento: new Date(),
+    },
+  });
+
+  await incrementarLivroDisponivel(emprestimo.livroId);
 };
