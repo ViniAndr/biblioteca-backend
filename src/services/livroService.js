@@ -24,6 +24,15 @@ export const cadastrado = async (dados) => {
   const livro = await prisma.livro.findUnique({ where: { isbn } });
   if (livro) throw new AppError("Esse livro já foi cadastrado", 400);
 
+  const autor = await prisma.autor.findUnique({ where: { id: dadosProntos.autorId } });
+  if (!autor) throw new AppError("Autor não econtrado", 404);
+
+  const editora = await prisma.editora.findUnique({ where: { id: dadosProntos.editoraId } });
+  if (!editora) throw new AppError("Editora não encontrada", 404);
+
+  const categoria = await prisma.categoria.findUnique({ where: { id: dadosProntos.categoriaId } });
+  if (!categoria) throw new AppError("Categoria não econtrada", 404);
+
   await prisma.livro.create({ data: { ...dadosProntos } });
 };
 

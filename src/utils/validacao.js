@@ -99,3 +99,9 @@ export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, a
   validarId(editoraId, "editora");
   validarId(categoriaId, "categoria");
 };
+
+function validarId(id, entidade) {
+  if (!id || !Number.isInteger(Number(id)) || Number(id) <= 0) {
+    throw new AppError(`O id ${entidade == "autor" ? "do" : "da"} ${entidade} é invalido`, 400);
+  }
+}

@@ -43,8 +43,33 @@ export const confirmarRetirada = async (req, res, next) => {
   const funcionarioId = Number(req.usuarioId);
 
   try {
-    await service.confirmarRetirada(emprestimoId, funcionarioId);
-    return res.status(200).json({ mensagem: "Retirada confirmada com sucesso" });
+    const emprestimo = await service.confirmarRetirada(emprestimoId, funcionarioId);
+    return res.status(200).json({
+      mensagem: "Retirada confirmada com sucesso",
+      emprestimo,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const devolucao = async (req, res, next) => {
+  const emprestimoId = Number(req.params.id);
+
+  try {
+    await service.devolucao(emprestimoId, req.body.estadoDevolucao);
+    return res.status(200).json({ mensagem: "Devolução realizada com sucesso" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const renovarEmprestimo = async (req, res, next) => {
+  const emprestimoId = Number(req.params.id);
+
+  try {
+    const renovacao = await service.renovarEmprestimo(emprestimoId);
+    return res.status(200).json(renovacao);
   } catch (error) {
     next(error);
   }

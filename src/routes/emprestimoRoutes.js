@@ -12,7 +12,7 @@ import controleAcesso from "../middlewares/controleAcesso.js";
 
 router.post("/solicitar", authMiddleware, emprestimo.solicitar);
 
-router.post("/criar/", authMiddleware, controleAcesso("funcionario"), emprestimo.fazerEmprestimo);
+router.post("/criar", authMiddleware, controleAcesso("funcionario"), emprestimo.fazerEmprestimo);
 
 router.put("/cancelar-solicitacao/:id", authMiddleware, validarId, emprestimo.cancelarSolicitacao);
 
@@ -23,6 +23,10 @@ router.put(
   validarId,
   emprestimo.confirmarRetirada
 );
+
+router.put("/devolucao/:id", authMiddleware, controleAcesso("funcionario"), validarId, emprestimo.devolucao);
+
+router.put("/renovar/:id", authMiddleware, validarId, emprestimo.renovarEmprestimo);
 
 // Middleware global de tratamento de erros
 router.use(handleErrors);

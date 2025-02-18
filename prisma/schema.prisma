@@ -81,6 +81,7 @@ model Emprestimo {
   dataDevolucao     DateTime? // Só será preenchida se na devolução
   estadoDevolucao   String? // Relatar como o livro foi devolvido
   dataCancelamento  DateTime?
+  renovacoes        Int               @default(0) 
 
   // Relacionamento com Cliente
   clienteId       Int
