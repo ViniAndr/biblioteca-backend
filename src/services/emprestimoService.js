@@ -278,3 +278,28 @@ export const renovarEmprestimo = async (emprestimoId) => {
     },
   });
 };
+
+export const listarEmprestimos = async (pagina, itensPorPagina, livro, status) => {
+  const where = {};
+
+  if (livro) {
+    where.livro = {
+      titulo: {
+        contains: livro,
+        mode: "insensitive",
+      },
+    };
+  }
+
+  if (status) where.status = status;
+
+  // ainda não pensei no que mostrar no front
+  return await prisma.emprestimo.findMany({
+    where,
+    include: {
+      livro: true,
+    },
+    take: Number(itensPorPagina),
+    skip: (Number(pagina) - 1) * Number(itensPorPagina),
+  });
+};

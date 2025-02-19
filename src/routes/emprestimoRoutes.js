@@ -28,6 +28,7 @@ router.put("/devolucao/:id", authMiddleware, controleAcesso("funcionario"), vali
 
 router.put("/renovar/:id", authMiddleware, validarId, emprestimo.renovarEmprestimo);
 
+router.get("/listar", authMiddleware, controleAcesso("funcionario"), emprestimo.listarTodos);
 // Middleware global de tratamento de erros
 router.use(handleErrors);
 

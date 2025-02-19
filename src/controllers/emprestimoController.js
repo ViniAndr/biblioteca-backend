@@ -74,3 +74,16 @@ export const renovarEmprestimo = async (req, res, next) => {
     next(error);
   }
 };
+
+export const listarTodos = async (req, res, next) => {
+  // Parametros opcionais para FILTROS
+  const { pagina = 1, qtdItensPorPagina = 10, livro, status } = req.query;
+  const itensPorPagina = Number(qtdItensPorPagina);
+
+  try {
+    const emprestimos = await service.listarEmprestimos(pagina, itensPorPagina, livro, status);
+    return res.status(200).json(emprestimos);
+  } catch (error) {
+    next(error);
+  }
+};
