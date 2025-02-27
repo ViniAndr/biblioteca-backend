@@ -285,6 +285,7 @@ export const renovarEmprestimo = async (emprestimoId) => {
   return renovacao;
 };
 
+// Listar emprestimo agora está modular para mostrar todos e para mostrar apenas o de um unico cliente
 export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, clienteId) => {
   const where = {};
 
@@ -299,26 +300,32 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, c
   }
 
   if (status) where.status = status;
-  if (clienteId) where.status = clienteId;
+  if (clienteId) where.clienteId = clienteId;
+
+  // Configuração do `select`, removendo `cliente` se `clienteId` for `false`
+  const select = {
+    id: true,
+    status: true,
+    dataSolicitacao: true,
+    livro: {
+      select: {
+        titulo: true,
+      },
+    },
+  };
+
+  if (!clienteId) {
+    select.cliente = {
+      select: {
+        nome: true,
+      },
+    };
+  }
 
   // ainda não pensei no que mostrar no front
   const emprestimos = await prisma.emprestimo.findMany({
     where,
-    select: {
-      id: true,
-      status: true,
-      cliente: {
-        select: {
-          nome: true,
-        },
-      },
-      livro: {
-        select: {
-          titulo: true,
-        },
-      },
-      dataSolicitacao: true,
-    },
+    select,
     take: Number(itensPorPagina),
     skip: (Number(pagina) - 1) * Number(itensPorPagina),
   });

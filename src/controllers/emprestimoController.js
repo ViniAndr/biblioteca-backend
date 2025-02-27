@@ -87,3 +87,18 @@ export const listarTodos = async (req, res, next) => {
     next(error);
   }
 };
+
+// Historico do cliente
+export const HistoricoCliente = async (req, res, next) => {
+  const clienteId = Number(req.usuarioId);
+  // Parametros opcionais para FILTROS
+  const { pagina = 1, qtdItensPorPagina = 20, status } = req.query;
+  const itensPorPagina = Number(qtdItensPorPagina);
+
+  try {
+    const emprestimos = await service.listarEmprestimos(pagina, itensPorPagina, null, status, clienteId);
+    return res.status(200).json(emprestimos);
+  } catch (error) {
+    next(error);
+  }
+};

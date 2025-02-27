@@ -13,6 +13,7 @@ import controleAcesso from "../middlewares/controleAcesso.js";
 // Apenas o cliete tem acesso a essa rota
 router.post("/solicitar", authMiddleware, controleAcesso("cliente", true), emprestimo.solicitar);
 
+// Cliente fazer empretimo diretamento com o funcionario
 router.post("/criar", authMiddleware, controleAcesso("funcionario"), emprestimo.fazerEmprestimo);
 
 // Apenas o cliete tem acesso a essa rota
@@ -24,6 +25,7 @@ router.put(
   emprestimo.cancelarSolicitacao
 );
 
+// Retirar o livro após solicitação pelo cliente
 router.put(
   "/confirmar-retirada/:id",
   authMiddleware,
@@ -32,11 +34,18 @@ router.put(
   emprestimo.confirmarRetirada
 );
 
+// Devolução de um livro
 router.put("/devolucao/:id", authMiddleware, controleAcesso("funcionario"), validarId, emprestimo.devolucao);
 
+// renovar algum emprestimo, pode ser feito por qualquer pessoa logada
 router.put("/renovar/:id", authMiddleware, validarId, emprestimo.renovarEmprestimo);
 
+// lista todos os emprestimos e é acessado pelo funcionario, podendo usar filtros
 router.get("/listar", authMiddleware, controleAcesso("funcionario"), emprestimo.listarTodos);
+
+// cliente pode ver todo seu historico de emprestimos
+router.get("/historico-cliente", authMiddleware, controleAcesso("cliente", true), emprestimo.HistoricoCliente);
+
 // Middleware global de tratamento de erros
 router.use(handleErrors);
 
