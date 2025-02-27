@@ -38,8 +38,7 @@ export const login = async (dadosLogin) => {
 };
 
 export const obterPerfil = async (id) => {
-  // não vou validar ID porque sei que não pode haver erros
-  // não validei se o admin foi econtrado por essa função só tem para admin logado
+  // Id já vem validado pelo req
 
   return await prisma.admin.findUnique({
     where: { id },
@@ -51,6 +50,7 @@ export const obterPerfil = async (id) => {
 };
 
 export const atualizarDados = async (id, dadosNovos) => {
+  // Id já vem validado pelo req
   const { email, senhaAtual, senhaNova } = dadosNovos;
   const emailPadrao = "admin@biblioteca.com"; // validado
   const senhaPadrao = "biblioteca123"; // validado
@@ -89,6 +89,7 @@ export const atualizarDados = async (id, dadosNovos) => {
 };
 
 export const resetarDados = async (id) => {
+  // Id já vem validado pelo req
   const email = "admin@biblioteca.com"; // validado
   const senha = await hashSenha("biblioteca123"); // validado
 

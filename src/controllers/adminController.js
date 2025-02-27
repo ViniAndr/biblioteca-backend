@@ -22,7 +22,7 @@ export const login = async (req, res, next) => {
 };
 
 export const verPerfil = async (req, res, next) => {
-  const adminId = req.usuarioId;
+  const adminId = Number(req.usuarioId);
   try {
     const adminPerfil = await adminService.obterPerfil(adminId);
     return res.status(200).json(adminPerfil);
@@ -32,7 +32,7 @@ export const verPerfil = async (req, res, next) => {
 };
 
 export const atualizarPerfil = async (req, res, next) => {
-  const adminId = req.usuarioId;
+  const adminId = Number(req.usuarioId);
   try {
     await adminService.atualizarDados(adminId, req.body);
     res.status(200).json({ mensagem: "Dados atualizados com sucesso" });
@@ -42,7 +42,7 @@ export const atualizarPerfil = async (req, res, next) => {
 };
 
 export const resetarConta = async (req, res, next) => {
-  const adminId = req.usuarioId;
+  const adminId = Number(req.usuarioId);
   try {
     await adminService.resetarDados(adminId);
     res.status(200).json({ mensagem: "Conta resetada com sucesso" });

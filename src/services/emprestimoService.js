@@ -1,101 +1,93 @@
+import { addDays, isBefore, isAfter } from "date-fns";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // utils
 import AppError from "../utils/AppError.js";
+import { validarId } from "../utils/validacao.js";
+import calcularDataDevolucao from "../utils/calcularDataDevolucao.js";
+import { MENSAGENS_ERRO, EMPRESTIMO_STATUS } from "../utils/constants.js";
+import { formatarData } from "../utils/formatador.js";
 
 // Funções auxiliares
-// Validar o ID
-function validarId(id, entidade) {
-  if (!Number.isInteger(id) || id < 0) {
-    throw new AppError(`ID do ${entidade} inválido.`, 400);
-  }
-}
-
-// Calcula a data de volta do livro usando apenas dias uteis
-function calcularDataDevolucao(diasUteis, dataBase) {
-  let data = dataBase ? new Date(dataBase) : new Date();
-  let contador = 0;
-
-  while (contador < diasUteis) {
-    data.setDate(data.getDate() + 1);
-    const diaSemana = data.getDay();
-
-    if (diaSemana !== 0 && diaSemana !== 6) {
-      contador++;
-    }
-  }
-
-  return data;
-}
-
 // verifica se existe o livro a ser solicitado/emprestado e se tem cópia disponivel
-async function livroExisteETemDisponivel(id) {
+async function verificarLivroDisponivel(id) {
   const livro = await prisma.livro.findUnique({
     where: { id },
     select: { id, qtdDisponivel: true }, // Buscar só o necessário
   });
 
   // Verificações encima do livro
-  if (!livro) throw new AppError("Livro não econtrado", 400);
+  if (!livro) throw new AppError(MENSAGENS_ERRO.LIVRO_NAO_ENCONTRADO, 400);
   if (!livro.qtdDisponivel || livro.qtdDisponivel <= 0) {
-    throw new AppError("No momento não temos nenhuma cópia disponível.", 400);
+    throw new AppError(MENSAGENS_ERRO.LIVRO_NAO_DISPONIVEL, 400);
   }
 }
 
 // Verificar se o cliente existe
-async function clienteExiste(id) {
+async function validarCliente(id) {
   const cliente = await prisma.cliente.findUnique({
     where: { id },
     select: { id: true }, // Apenas verificamos se existe
   });
 
-  if (!cliente) throw new AppError("Cliente não encontrado.", 400);
+  if (!cliente) throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 400);
 }
 
-// Checar se esse cliente já fez alguma solicitação anterior do mesmo livro e está em SOLICITADO ou EMPRESTADO
-async function duplicidadeNoEmprestimo(cliente, livro) {
-  const emprestimoExistente = await prisma.emprestimo.findFirst({
-    where: {
-      clienteId: cliente,
-      livroId: livro,
-      status: {
-        in: ["SOLICITADO", "EMPRESTADO"],
-      },
+// Buscar empréstimo pelo status e validar
+async function buscarEmprestimoPorStatus(id, statusPermitidos = []) {
+  const emprestimo = await prisma.emprestimo.findUnique({
+    where: { id },
+    select: {
+      status: true,
+      clienteId: true,
+      livroId: true,
+      renovacoes: true,
+      prazoDevolucao: true,
     },
   });
-  if (emprestimoExistente) {
-    throw new AppError("Você já tem um pedido em andamento para este livro.", 400);
+
+  if (!emprestimo) throw new AppError(MENSAGENS_ERRO.EMPRESTIMO_NAO_ENCONTRADO, 400);
+  if (!statusPermitidos.includes(emprestimo.status)) {
+    throw new AppError(MENSAGENS_ERRO.ACAO_INDISPONIVEL, 400);
   }
+
+  return emprestimo;
 }
 
-async function decrementarLivroDisponivel(livroId) {
-  await prisma.livro.update({
-    where: { id: livroId },
-    data: { qtdDisponivel: { decrement: 1 } },
-  });
+async function Verificacoes(clienteId, livroId) {
+  const [emprestimos] = await prisma.$queryRaw`
+  SELECT 
+    COUNT(CASE WHEN status = 'ATRASADO' THEN 1 END) AS temAtraso,
+    COUNT(CASE WHEN "livroId" = ${livroId} AND status IN ('SOLICITADO', 'EMPRESTADO') THEN 1 END) AS duplicidade,
+    COUNT(CASE WHEN status IN ('SOLICITADO', 'EMPRESTADO') THEN 1 END) AS totalEmprestimos
+  FROM "Emprestimo" 
+  WHERE "clienteId" = ${clienteId};
+  `;
+
+  // Verifica se esse cliente tem algum atraso
+  if (emprestimos.temAtraso > 0) throw new AppError("Você possui empréstimos em atraso.", 400);
+  // Checar se esse cliente já fez alguma solicitação anterior do mesmo livro e está em SOLICITADO ou EMPRESTADO
+  if (emprestimos.duplicidade > 0) throw new AppError("Você já tem um empréstimo desse livro.", 400);
+  // o Cliente só pode ter no maximo 3 emprestimo/solicitação em andamento
+  if (emprestimos.totalEmprestimos >= 3)
+    throw new AppError("Você já tem o máximo de empréstimos andamento permitidos.", 400);
 }
 
-async function incrementarLivroDisponivel(livroId) {
-  await prisma.livro.update({
-    where: { id: livroId },
-    data: { qtdDisponivel: { increment: 1 } },
-  });
-}
+// ########## FUNÇÕES DO EMPRESTIMO DE LIVRO ##########
 
 // Cliente pode solicitar um emprestimo e terá um prazo para ir buscar o livro
 export const solicitarEmprestimo = async (clienteId, livroId) => {
-  validarId(clienteId, "cliente");
-  validarId(livroId, "livro");
+  // Id do cliente já é valdiado, mas o do livro não.
+  validarId(livroId);
 
-  // Verificações no banco
-  await Promise.all([livroExisteETemDisponivel(livroId), duplicidadeNoEmprestimo(clienteId, livroId)]);
+  // Verificações no banco - Garante a ordem e evita erro
+  await verificarLivroDisponivel(livroId); // livro existe? tem disponivel?
+  await Verificacoes(clienteId, livroId); // diversas validações
 
   // Transações do Prisma para garantir que ou ambas as operações são concluídas ou nenhuma delas é salva no banco
-  return await prisma.$transaction(async (prisma) => {
-    // Criar o empréstimo
-    const novoEmprestimo = await prisma.emprestimo.create({
-      // status e data da solicitação já estão com valores padrão
+  const novoEmprestimo = await prisma.$transaction([
+    prisma.emprestimo.create({
       data: {
         clienteId,
         livroId,
@@ -106,42 +98,44 @@ export const solicitarEmprestimo = async (clienteId, livroId) => {
         dataSolicitacao: true,
         prazoRetirada: true,
         livro: {
-          select: {
-            titulo: true,
-          },
+          select: { titulo: true },
         },
       },
-    });
+    }),
+    prisma.livro.update({
+      where: { id: livroId },
+      data: { qtdDisponivel: { decrement: 1 } },
+    }),
+  ]);
 
-    // Atualizar a quantidade de livros disponíveis
-    await decrementarLivroDisponivel(livroId);
+  // formtar datas
+  novoEmprestimo[0].dataSolicitacao = formatarData(novoEmprestimo[0].dataSolicitacao);
+  novoEmprestimo[0].prazoRetirada = formatarData(novoEmprestimo[0].prazoRetirada);
 
-    return novoEmprestimo;
-  });
+  return novoEmprestimo[0];
 };
 
 // Criar um novo registro de emprestimo com o funcionario
 export const fazerEmprestimo = async (funcionarioId, dados) => {
+  // Id do funcionario já vem validado
   const clienteId = Number(dados.clienteId);
   const livroId = Number(dados.livroId);
 
-  validarId(clienteId, "cliente");
-  validarId(livroId, "livro");
+  validarId(clienteId);
+  validarId(livroId);
 
-  // Verificações no banco
-  await Promise.all([
-    livroExisteETemDisponivel(livroId),
-    clienteExiste(clienteId),
-    duplicidadeNoEmprestimo(clienteId, livroId),
-  ]);
+  // Verificações no banco - garante a ordem e impede erro, contra é o tempo a mais para cada consulta
+  await verificarLivroDisponivel(livroId); // se o livro existe e se tem copia disponivel
+  await validarCliente(clienteId); // se o cliente existe
+  await Verificacoes(clienteId, livroId);
 
-  // Transações do Prisma para garantir que ou ambas as operações são concluídas ou nenhuma delas é salva no banco
-  return await prisma.$transaction(async (prisma) => {
+  // Transações do Prisma para garantir que ambas as operações são concluídas ou nenhuma delas é salva no banco
+  const emprestimo = await prisma.$transaction([
     // Criar o empréstimo
-    const novoEmprestimo = await prisma.emprestimo.create({
+    prisma.emprestimo.create({
       // status e data da solicitação já estão com valores padrão
       data: {
-        status: "EMPRESTADO",
+        status: EMPRESTIMO_STATUS.EMPRESTADO,
         dataSolicitacao: new Date(),
         dataEmprestimo: new Date(),
         prazoDevolucao: calcularDataDevolucao(8),
@@ -159,52 +153,52 @@ export const fazerEmprestimo = async (funcionarioId, dados) => {
           },
         },
       },
-    });
+    }),
 
     // Atualizar a quantidade de livros disponíveis
-    await decrementarLivroDisponivel(livroId);
+    prisma.livro.update({
+      where: { id: livroId },
+      data: { qtdDisponivel: { decrement: 1 } },
+    }),
+  ]);
 
-    return novoEmprestimo;
-  });
+  emprestimo[0].dataSolicitacao = formatarData(emprestimo[0].dataSolicitacao);
+  emprestimo[0].prazoDevolucao = formatarData(emprestimo[0].prazoDevolucao);
+
+  return emprestimo;
 };
 
 // Caso o cliente desista da solicitacao pode cancelar.
 export const cancelarSolicitacao = async (clienteId, emprestimoId) => {
-  // ID ja esta validado pelo middlware
+  // Id do cliente já é validado(Req) e do emprestimo também pelo middlware
+  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [EMPRESTIMO_STATUS.SOLICITADO]);
+  if (emprestimo.clienteId !== clienteId) throw new AppError("Essa solicitação não pertence a esse cliente", 400);
 
-  const emprestimo = await prisma.emprestimo.findUnique({
-    where: {
-      id: emprestimoId,
-      clienteId: clienteId,
-      status: "SOLICITADO",
-    },
-  });
-  if (!emprestimo) throw new AppError("Solicitação não encontrada", 400);
+  await prisma.$transaction([
+    prisma.emprestimo.update({
+      where: { id: emprestimoId },
+      data: {
+        status: EMPRESTIMO_STATUS.CANCELADO,
+        dataCancelamento: new Date(),
+      },
+    }),
 
-  await prisma.emprestimo.update({
-    where: { id: emprestimoId },
-    data: {
-      status: "CANCELADO",
-      dataCancelamento: new Date(),
-    },
-  });
-
-  await incrementarLivroDisponivel(emprestimo.livroId);
+    prisma.livro.update({
+      where: { id: emprestimo.livroId },
+      data: { qtdDisponivel: { increment: 1 } },
+    }),
+  ]);
 };
 
 // O cliente ir buscar o livro após solicitar o emprestimo
-export const confirmarRetirada = async (emprestimoId, funcionarioId) => {
-  // Ids já vem validado do Middleware
-  const emprestimoExiste = await prisma.emprestimo.findUnique({ where: { id: emprestimoId } });
-  if (!emprestimoExiste) throw new AppError("Não foi possivel localizar essa emprestimo", 400);
-  if (emprestimoExiste.status !== "SOLICITADO") {
-    throw new AppError("Emprestimo indisponível para retirada.", 400);
-  }
+export const confirmarRetirada = async (funcionarioId, emprestimoId) => {
+  // Id do funcionario já é validado(Req) e do emprestimo também pelo middlware
+  await buscarEmprestimoPorStatus(emprestimoId, [EMPRESTIMO_STATUS.SOLICITADO]);
 
-  return await prisma.emprestimo.update({
+  const emprestimo = await prisma.emprestimo.update({
     where: { id: emprestimoId },
     data: {
-      status: "EMPRESTADO",
+      status: EMPRESTIMO_STATUS.EMPRESTADO,
       dataEmprestimo: new Date(),
       prazoDevolucao: calcularDataDevolucao(8),
       funcionarioId,
@@ -213,75 +207,88 @@ export const confirmarRetirada = async (emprestimoId, funcionarioId) => {
       prazoDevolucao: true,
     },
   });
+
+  emprestimo.prazoDevolucao = formatarData(emprestimo.prazoDevolucao);
+
+  return emprestimo;
 };
 
 export const devolucao = async (emprestimoId, estadoDevolucao) => {
-  const emprestimoExiste = await prisma.emprestimo.findUnique({ where: { id: emprestimoId } });
-  if (!emprestimoExiste) throw new AppError("Não foi possivel localizar essa emprestimo", 400);
-  if (emprestimoExiste.status !== "EMPRESTADO") {
-    throw new AppError("Emprestimo indisponível para devolução.", 400);
-  }
+  // Id do emprestimo já vem valdiado pelo middleware
+  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [
+    EMPRESTIMO_STATUS.EMPRESTADO,
+    EMPRESTIMO_STATUS.ATRASADO,
+  ]);
 
   if (!estadoDevolucao || typeof estadoDevolucao !== "string") {
     throw new AppError("Informe um estado para o livro", 400);
   }
 
-  await prisma.$transaction(async (prisma) => {
+  await prisma.$transaction([
     // Realizar devolução
-    await prisma.emprestimo.update({
+    prisma.emprestimo.update({
       where: { id: emprestimoId },
       data: {
-        status: "DEVOLVIDO",
+        status: EMPRESTIMO_STATUS.DEVOLVIDO,
         dataDevolucao: new Date(),
         estadoDevolucao,
       },
-    });
+    }),
 
     // aumenta a quantidade de livro disponivel
-    await incrementarLivroDisponivel(emprestimoExiste.livroId);
-  });
+    prisma.livro.update({
+      where: { id: emprestimo.livroId },
+      data: { qtdDisponivel: { increment: 1 } },
+    }),
+  ]);
 };
 
 export const renovarEmprestimo = async (emprestimoId) => {
-  const emprestimoExiste = await prisma.emprestimo.findUnique({ where: { id: emprestimoId } });
-  if (!emprestimoExiste) throw new AppError("Não foi possivel localizar essa emprestimo", 400);
-  if (emprestimoExiste.status !== "EMPRESTADO") {
-    throw new AppError("Emprestimo indisponível para renovação.", 400);
-  }
+  // Id do emprestimo já vem valdiado pelo middleware
+  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [
+    EMPRESTIMO_STATUS.EMPRESTADO,
+    EMPRESTIMO_STATUS.ATRASADO,
+  ]);
 
   // controle sobre quantas renovações poderá ser feitas.
   const maxRenovacoes = 2;
-  if (emprestimoExiste.renovacoes >= maxRenovacoes) {
+  if (emprestimo.renovacoes >= maxRenovacoes) {
     throw new AppError("Limite de renovações atingido.", 400);
   }
 
+  // Datas de renovação
   const hoje = new Date();
-  const limiteRenovacao = new Date(emprestimoExiste.prazoDevolucao);
-  const aberturaRenovacao = new Date(emprestimoExiste.prazoDevolucao);
-  aberturaRenovacao.setDate(limiteRenovacao.getDate() - 2);
+  const prazoDevolucao = emprestimo.prazoDevolucao;
+  const aberturaRenovacao = addDays(prazoDevolucao, -2);
 
-  if (hoje < aberturaRenovacao || hoje > limiteRenovacao) {
+  if (isBefore(hoje, aberturaRenovacao) || isAfter(hoje, prazoDevolucao)) {
     throw new AppError(
-      `Renovação só permitida entre ${aberturaRenovacao.toLocaleDateString()} e ${limiteRenovacao.toLocaleDateString()}`,
+      `Renovação só permitida entre ${formatarData(aberturaRenovacao)} e ${formatarData(prazoDevolucao)}`,
       400
     );
   }
 
-  return await prisma.emprestimo.update({
+  const renovacao = await prisma.emprestimo.update({
     where: { id: emprestimoId },
     data: {
-      prazoDevolucao: calcularDataDevolucao(3, emprestimoExiste.prazoDevolucao),
+      prazoDevolucao: calcularDataDevolucao(3, emprestimo.prazoDevolucao),
       renovacoes: { increment: 1 },
     },
     select: {
       prazoDevolucao: true,
+      renovacoes: true,
     },
   });
+
+  renovacao.prazoDevolucao = formatarData(renovacao.prazoDevolucao);
+
+  return renovacao;
 };
 
-export const listarEmprestimos = async (pagina, itensPorPagina, livro, status) => {
+export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, clienteId) => {
   const where = {};
 
+  // Buscar pelo titulo do livro
   if (livro) {
     where.livro = {
       titulo: {
@@ -292,14 +299,42 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status) =
   }
 
   if (status) where.status = status;
+  if (clienteId) where.status = clienteId;
 
   // ainda não pensei no que mostrar no front
-  return await prisma.emprestimo.findMany({
+  const emprestimos = await prisma.emprestimo.findMany({
     where,
-    include: {
-      livro: true,
+    select: {
+      id: true,
+      status: true,
+      cliente: {
+        select: {
+          nome: true,
+        },
+      },
+      livro: {
+        select: {
+          titulo: true,
+        },
+      },
+      dataSolicitacao: true,
     },
     take: Number(itensPorPagina),
     skip: (Number(pagina) - 1) * Number(itensPorPagina),
   });
+
+  // Diz o total de itens encontrados
+  const contador = await prisma.emprestimo.count({ where });
+
+  // Formatar as datas
+  const emprestimosFormatados = emprestimos.map((emprestimo) => ({
+    ...emprestimo,
+    dataSolicitacao: formatarData(emprestimo.dataSolicitacao),
+  }));
+
+  return {
+    emprestimos: emprestimosFormatados,
+    qtdTotalDePaginas: Math.ceil(contador / itensPorPagina),
+    paginaAtual: Number(pagina),
+  };
 };

@@ -37,6 +37,7 @@ export const cadastrado = async (dados) => {
 };
 
 export const atualizar = async (id, dados) => {
+  // Id já vem validado pelo middleware
   const campos = Object.keys(dados);
 
   const livro = await prisma.livro.findUnique({ where: { id } });
@@ -69,6 +70,7 @@ export const atualizar = async (id, dados) => {
 };
 
 export const deletar = async (id) => {
+  // Id já vem validado pelo middleware
   const livro = await prisma.livro.findUnique({ where: { id } });
   if (!livro) throw new AppError("Livro não encontrado", 404);
 
@@ -110,6 +112,7 @@ export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina 
 };
 
 export const obterLivro = async (id) => {
+  // Id já vem validado pelo middleware
   const livro = await prisma.livro.findUnique({
     where: { id },
     include: {

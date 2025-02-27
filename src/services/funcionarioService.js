@@ -65,6 +65,7 @@ export const login = async (dados) => {
 };
 
 export const obterPerfil = async (id) => {
+  // Id já vem validado pelo req ou pelo Middleware
   const funcionario = await prisma.funcionario.findUnique({
     where: { id },
     select: {
@@ -78,6 +79,7 @@ export const obterPerfil = async (id) => {
 };
 
 export const atualizarDados = async (id, dados) => {
+  // Id já vem validado pelo req
   const { nome, sobrenome, email, senhaAtual, senhaNova } = dados;
 
   const dadosNovos = {};

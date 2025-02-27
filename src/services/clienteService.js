@@ -10,6 +10,7 @@ import gerarToken from "../utils/gerarToken.js";
 import verificarDuplicidade from "../utils/verificarDuplicidade.js";
 import { limparNumeros, juntarNomes, formatarTelefoneBR } from "../utils/formatador.js";
 import * as validacao from "../utils/validacao.js";
+import { MENSAGENS_ERRO } from "../utils/constants.js";
 
 // Cadastro simples (presencial) feito pelo funcionario
 export const cadastrorSimples = async (dadosCliente) => {
@@ -102,7 +103,7 @@ export const login = async (dadosLogin) => {
 
   const clienteAutenticado = await autenticarUsuario(dadosLogin, "cliente");
   if (!clienteAutenticado) {
-    throw new AppError("Credenciais inválidas. Verifique os dados fornecidos.", 401);
+    throw new AppError(MENSAGENS_ERRO.CREDENCIAIS_INVALIDAS, 401);
   }
 
   const token = gerarToken(clienteAutenticado);
@@ -144,6 +145,7 @@ export const migrarContaPresencialParaOnline = async (dados) => {
 
 // Consultar os dados do cliente, metodo usado tanto pelo cliente e pelo funcionario
 export const obterPerfil = async (id) => {
+  // Id já vem validado do req(cliente) e por middleware(funcionario)
   const cliente = await prisma.cliente.findUnique({
     where: { id },
     select: {
@@ -158,7 +160,7 @@ export const obterPerfil = async (id) => {
     },
   });
   if (!cliente) {
-    throw new AppError("Usuário não localizado.", 404);
+    throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
   }
 
   return {
@@ -168,12 +170,13 @@ export const obterPerfil = async (id) => {
 };
 
 export const atualizarDadosPessoais = async (id, dadosNovos) => {
+  // Id já vem validado do req
   const { nome, sobrenome, email, senhaAtual, senhaNova } = dadosNovos;
   const telefone = limparNumeros(dadosNovos.telefone);
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
-    throw new AppError("Cliente não encontrado.", 404);
+    throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
   }
 
   const dadosAtualizados = {};
@@ -210,7 +213,7 @@ export const atualizarDadosPessoais = async (id, dadosNovos) => {
   }
 
   if (Object.keys(dadosAtualizados).length === 0) {
-    throw new AppError("Nenhum dado válido para atualizar.", 400);
+    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
   }
 
   await prisma.cliente.update({
@@ -220,11 +223,12 @@ export const atualizarDadosPessoais = async (id, dadosNovos) => {
 };
 
 export const atualizarEndereco = async (id, dadosNovos) => {
+  // Id já vem validado do req
   const { logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
-    throw new AppError("Cliente não encontrado.", 404);
+    throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
   }
 
   const novoEndereco = {};
@@ -243,7 +247,7 @@ export const atualizarEndereco = async (id, dadosNovos) => {
   }
 
   if (Object.keys(novoEndereco).length === 0) {
-    throw new AppError("Nenhum dado válido para atualizar.", 400);
+    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
   }
 
   await prisma.cliente.update({
@@ -253,12 +257,13 @@ export const atualizarEndereco = async (id, dadosNovos) => {
 };
 
 export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
+  // Id já vem validado por middleware
   const { nome, sobrenome, logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
   const telefone = limparNumeros(dadosNovos.telefone);
 
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) {
-    throw new AppError("Cliente não encontrado.", 404);
+    throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
   }
 
   const dadosAtualizados = {};
@@ -289,7 +294,7 @@ export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
   }
 
   if (Object.keys(dadosAtualizados).length === 0) {
-    throw new AppError("Nenhum dado válido para atualizar.", 400);
+    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
   }
 
   await prisma.cliente.update({

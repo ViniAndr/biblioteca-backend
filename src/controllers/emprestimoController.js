@@ -39,11 +39,11 @@ export const cancelarSolicitacao = async (req, res, next) => {
 };
 
 export const confirmarRetirada = async (req, res, next) => {
-  const emprestimoId = Number(req.params.id);
   const funcionarioId = Number(req.usuarioId);
+  const emprestimoId = Number(req.params.id);
 
   try {
-    const emprestimo = await service.confirmarRetirada(emprestimoId, funcionarioId);
+    const emprestimo = await service.confirmarRetirada(funcionarioId, emprestimoId);
     return res.status(200).json({
       mensagem: "Retirada confirmada com sucesso",
       emprestimo,

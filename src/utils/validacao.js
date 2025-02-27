@@ -95,13 +95,19 @@ export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, a
     throw new AppError("A edição do livro é obrigatória.", 400);
   }
 
-  validarId(autorId, "autor");
-  validarId(editoraId, "editora");
-  validarId(categoriaId, "categoria");
+  if (!Number.isInteger(Number(autorId)) || Number(autorId) <= 0) {
+    throw new AppError("O id do autor é invalido", 400);
+  }
+  if (!Number.isInteger(Number(editoraId)) || Number(editoraId) <= 0) {
+    throw new AppError("O id da editora é invalido", 400);
+  }
+  if (!Number.isInteger(Number(categoriaId)) || Number(categoriaId) <= 0) {
+    throw new AppError("O id da categoria é invalido", 400);
+  }
 };
 
-function validarId(id, entidade) {
+export const validarId = (id) => {
   if (!id || !Number.isInteger(Number(id)) || Number(id) <= 0) {
-    throw new AppError(`O id ${entidade == "autor" ? "do" : "da"} ${entidade} é invalido`, 400);
+    throw new AppError("Id Invalido", 400);
   }
-}
+};

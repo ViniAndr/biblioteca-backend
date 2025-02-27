@@ -57,6 +57,7 @@ export const obterTodos = async (entidade, nome, pagina = 1, itensPorPagina) => 
 };
 
 export const editar = async (entidade, id, dados) => {
+  // Id já vem validado por middleware
   const buscar = await prisma[entidade].findUnique({ where: { id } });
   if (!buscar) throw new AppError(`${entidade} não existe`, 404);
 
@@ -77,6 +78,7 @@ export const editar = async (entidade, id, dados) => {
 };
 
 export const deletar = async (entidade, id) => {
+  // Id já vem validado por middleware
   const buscar = await prisma[entidade].findUnique({ where: { id } });
   if (!buscar) throw new AppError(`${entidade} não existe`, 404);
 

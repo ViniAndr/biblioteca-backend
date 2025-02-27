@@ -10,11 +10,19 @@ import handleErrors from "../middlewares/handleErrors.js";
 import validarId from "../middlewares/validarId.js";
 import controleAcesso from "../middlewares/controleAcesso.js";
 
-router.post("/solicitar", authMiddleware, emprestimo.solicitar);
+// Apenas o cliete tem acesso a essa rota
+router.post("/solicitar", authMiddleware, controleAcesso("cliente", true), emprestimo.solicitar);
 
 router.post("/criar", authMiddleware, controleAcesso("funcionario"), emprestimo.fazerEmprestimo);
 
-router.put("/cancelar-solicitacao/:id", authMiddleware, validarId, emprestimo.cancelarSolicitacao);
+// Apenas o cliete tem acesso a essa rota
+router.put(
+  "/cancelar-solicitacao/:id",
+  authMiddleware,
+  controleAcesso("cliente", true),
+  validarId,
+  emprestimo.cancelarSolicitacao
+);
 
 router.put(
   "/confirmar-retirada/:id",

@@ -1,4 +1,5 @@
 import AppError from "./AppError.js";
+import { format, parseISO } from "date-fns";
 
 // Remove qualquer caractere que não seja numero
 export const limparNumeros = (telefone) => telefone.replace(/\D/g, "").trim();
@@ -20,3 +21,12 @@ export const juntarNomes = (nome, sobrenome) => {
 
   return `${nomeFormatado} ${sobrenomeFormatado}`;
 };
+
+export function formatarData(data) {
+  if (!data) return "Data inválida"; // Evita erro se `data` for undefined
+
+  // Se `data` já for um objeto Date, não precisa chamar parseISO
+  const dateObj = data instanceof Date ? data : parseISO(data);
+
+  return format(dateObj, "dd/MM/yyyy");
+}

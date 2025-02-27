@@ -29,13 +29,13 @@ router.post(
 router.post("/login", clienteController.login);
 
 // ver seus dados (PERFIL)
-router.get("/perfil", authMiddleware, controleAcesso("cliente"), clienteController.verPerfil);
+router.get("/perfil", authMiddleware, controleAcesso("cliente", true), clienteController.verPerfil);
 
 // atualizar seus dados de regsitro (email, senha, telefone e nome)
-router.put("/atualizar-dados", authMiddleware, controleAcesso("cliente"), clienteController.atualizarPerfil);
+router.put("/atualizar-dados", authMiddleware, controleAcesso("cliente", true), clienteController.atualizarPerfil);
 
 // atualizar seus dados de endereço
-router.put("/atualizar-endereco", authMiddleware, controleAcesso("cliente"), clienteController.atualizarEndereco);
+router.put("/atualizar-endereco", authMiddleware, controleAcesso("cliente", true), clienteController.atualizarEndereco);
 
 // atualizar todos os dados do cliente, porem quem faz isso é o funcionario.
 router.put(
