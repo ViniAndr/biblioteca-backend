@@ -13,6 +13,7 @@ import emprestimoRoutes from "./src/routes/emprestimoRoutes.js";
 
 // Cron Jobs
 import "./src/jobs/cancelarSolicitacoes.js";
+import "./src/jobs/verificarVencimentos.js";
 
 class App {
   constructor() {
