@@ -345,3 +345,5 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, c
     paginaAtual: Number(pagina),
   };
 };
+
+// ##### AÇÕES AUTOMATICOS são FEITAS PELO CRON JOB #####

@@ -11,6 +11,9 @@ import atributosRoutes from "./src/routes/atributosRoutes.js";
 import livroRoutes from "./src/routes/livroRoutes.js";
 import emprestimoRoutes from "./src/routes/emprestimoRoutes.js";
 
+// Cron Jobs
+import "./src/jobs/cancelarSolicitacoes.js";
+
 class App {
   constructor() {
     this.app = express();
