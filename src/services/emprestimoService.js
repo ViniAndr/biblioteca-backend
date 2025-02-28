@@ -346,4 +346,45 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, c
   };
 };
 
+// Lista os top 10 livros mais emprestados
+export const listarLivrosMaisEmprestados = async () => {
+  const STATUS_VALIDOS = [EMPRESTIMO_STATUS.EMPRESTADO, EMPRESTIMO_STATUS.DEVOLVIDO, EMPRESTIMO_STATUS.ATRASADO];
+
+  const livrosMaisEmprestados = await prisma.emprestimo.groupBy({
+    by: ["livroId"], // Agrupa pelo ID do livro
+    where: {
+      status: { in: STATUS_VALIDOS }, // apenas os que de fatos foram para a mão do cliente
+    },
+    _count: { livroId: true }, // Conta quantas vezes cada livroId aparece
+    orderBy: { _count: { livroId: "desc" } }, // Ordena do maior para o menor
+    take: 10, // Pega apenas os 10 primeiros resultados
+  });
+
+  // Agora buscamos os detalhes dos livros usando os IDs encontrados
+  const livroIds = livrosMaisEmprestados.map((item) => item.livroId);
+
+  const livrosDetalhados = await prisma.livro.findMany({
+    // usado o in ao inves do Promisse.all porque aqui é apenas uma consulta, já no promisse são varias ao mesmo tempo
+    where: { id: { in: livroIds } },
+    select: {
+      id: true,
+      titulo: true,
+    },
+  });
+
+  // Juntar os dados dos livros com a contagem de empréstimos
+  const resultadoFinal = livrosMaisEmprestados.map((emprestimo) => {
+    // .find() é um método do Array - Ele percorre um array e retorna o primeiro elemento que satisfaz a condição passada.
+    // verifico se o livro tem o id igual ao do emprestimo para juntar os dados úteis
+    const livro = livrosDetalhados.find((l) => l.id === emprestimo.livroId);
+    return {
+      livroId: emprestimo.livroId,
+      titulo: livro ? livro.titulo : "Desconhecido",
+      totalEmprestimos: emprestimo._count.livroId,
+    };
+  });
+
+  return resultadoFinal;
+};
+
 // ##### AÇÕES AUTOMATICOS são FEITAS PELO CRON JOB #####

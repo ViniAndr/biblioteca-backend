@@ -46,6 +46,9 @@ router.get("/listar", authMiddleware, controleAcesso("funcionario"), emprestimo.
 // cliente pode ver todo seu historico de emprestimos
 router.get("/historico-cliente", authMiddleware, controleAcesso("cliente", true), emprestimo.HistoricoCliente);
 
+// Listar os top X livros mais emprestados
+router.get("/top-livros", emprestimo.topLivrosEmprestados);
+
 // Middleware global de tratamento de erros
 router.use(handleErrors);
 
