@@ -387,4 +387,42 @@ export const listarLivrosMaisEmprestados = async () => {
   return resultadoFinal;
 };
 
+export const listarClientesMaisFrequentes = async () => {
+  const STATUS_VALIDOS = [EMPRESTIMO_STATUS.EMPRESTADO, EMPRESTIMO_STATUS.DEVOLVIDO, EMPRESTIMO_STATUS.ATRASADO];
+
+  const clientesMaisFrequentes = await prisma.emprestimo.groupBy({
+    by: ["clienteId"],
+    where: {
+      status: { in: STATUS_VALIDOS },
+    },
+    _count: { clienteId: true },
+    orderBy: { _count: { clienteId: "desc" } },
+    take: 10,
+  });
+
+  // Pegando apenas os IDs dos clientes
+  const clienteIds = clientesMaisFrequentes.map((cliente) => cliente.clienteId);
+
+  // Buscando os detalhes dos clientes usando `prisma.cliente.findMany()`
+  const clientesDetalhados = await prisma.cliente.findMany({
+    where: { id: { in: clienteIds } },
+    select: {
+      id: true,
+      nome: true,
+    },
+  });
+
+  // Juntando os dados
+  const resultadoFinal = clientesMaisFrequentes.map((emprestimo) => {
+    const cliente = clientesDetalhados.find((c) => c.id === emprestimo.clienteId);
+    return {
+      clienteId: emprestimo.clienteId,
+      nome: cliente.nome,
+      totalEmprestimos: emprestimo._count.clienteId,
+    };
+  });
+
+  return resultadoFinal;
+};
+
 // ##### AÇÕES AUTOMATICOS são FEITAS PELO CRON JOB #####

@@ -111,3 +111,12 @@ export const topLivrosEmprestados = async (req, res, next) => {
     next(error);
   }
 };
+
+export const clientesMaisFrequentes = async (req, res, next) => {
+  try {
+    const topClientes = await service.listarClientesMaisFrequentes();
+    return res.status(200).json(topClientes);
+  } catch (error) {
+    next(error);
+  }
+};
