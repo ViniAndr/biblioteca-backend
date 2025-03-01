@@ -88,6 +88,17 @@ export const listarTodos = async (req, res, next) => {
   }
 };
 
+export const obterEmprestimo = async (req, res, next) => {
+  const emprestimoId = Number(req.params.id);
+  const clienteId = req.usuarioRole === "cliente" ? req.usuarioId : null;
+  try {
+    const emprestimo = await service.obterEmprestimo(emprestimoId, clienteId);
+    return res.status(200).json(emprestimo);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Historico do cliente
 export const HistoricoCliente = async (req, res, next) => {
   const clienteId = Number(req.usuarioId);

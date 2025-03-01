@@ -43,6 +43,9 @@ router.put("/renovar/:id", authMiddleware, validarId, emprestimo.renovarEmpresti
 // lista todos os emprestimos e é acessado pelo funcionario, podendo usar filtros
 router.get("/listar", authMiddleware, controleAcesso("funcionario"), emprestimo.listarTodos);
 
+// Ver os detalhes de um emprestimo
+router.get("/obter-emprestimo/:id", authMiddleware, emprestimo.obterEmprestimo);
+
 // cliente pode ver todo seu historico de emprestimos
 router.get("/historico-cliente", authMiddleware, controleAcesso("cliente", true), emprestimo.HistoricoCliente);
 

@@ -316,20 +316,25 @@ export const verTodosClientes = async (pagina = 1, nome, qtdItensPorPagina) => {
     };
   }
 
-  const clientes = await prisma.cliente.findMany({
-    where,
-    select: {
-      id: true,
-      nome: true,
-      telefone: true,
-      cidade: true,
-      estado: true,
-    },
-    // take = pega tal quantidade de itens do BD
-    take: Number(qtdItensPorPagina),
-    // skip = serve para "pular" itens já trazidos em páginas anteriores
-    skip: (Number(pagina) - 1) * Number(qtdItensPorPagina),
-  });
+  const [clientes, contador] = await Promise.all([
+    prisma.cliente.findMany({
+      where,
+      select: {
+        id: true,
+        nome: true,
+        telefone: true,
+        cidade: true,
+        estado: true,
+      },
+      // take = pega tal quantidade de itens do BD
+      take: Number(qtdItensPorPagina),
+      // skip = serve para "pular" itens já trazidos em páginas anteriores
+      skip: (Number(pagina) - 1) * Number(qtdItensPorPagina),
+    }),
+
+    // Diz o total de itens encontrados
+    prisma.cliente.count({ where }),
+  ]);
 
   // Aplicando a formatação no telefone de cada cliente
   const clientesFormatados = clientes.map((cliente) => ({
@@ -337,12 +342,10 @@ export const verTodosClientes = async (pagina = 1, nome, qtdItensPorPagina) => {
     telefone: formatarTelefoneBR(cliente.telefone),
   }));
 
-  // Diz o total de itens encontrados
-  const contador = await prisma.cliente.count({ where });
-
   return {
     clientes: clientesFormatados,
     qtdTotalDePaginas: Math.ceil(contador / qtdItensPorPagina),
     paginaAtual: Number(pagina),
+    totalClientes: contador,
   };
 };

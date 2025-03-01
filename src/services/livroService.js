@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 import { validarLivro } from "../utils/validacao.js";
 import AppError from "../utils/AppError.js";
-import { limparNumeros } from "../utils/formatador.js";
+import { limparNumeros, formatarISBN } from "../utils/formatador.js";
 
 export const cadastrado = async (dados) => {
   const isbn = limparNumeros(dados.isbn);
@@ -91,21 +91,35 @@ export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina 
   if (categoria) where.categoriaId = Number(categoria);
   if (editora) where.editoraId = Number(editora);
 
+  const select = {
+    id: true,
+    titulo: true,
+    isbn: true,
+    qtdCopias: true,
+    qtdDisponivel: true,
+    edicao: true,
+    autor: true,
+    editora: true,
+    categoria: true,
+  };
+
   const livros = await prisma.livro.findMany({
     where,
-    include: {
-      autor: true,
-      editora: true,
-      categoria: true,
-    },
+    select,
     take: Number(itensPorPagina),
     skip: (Number(pagina) - 1) * Number(itensPorPagina),
   });
 
   const contador = await prisma.livro.count({ where });
 
+  const livrosFormatado = livros.map((l) => ({
+    ...l,
+    isbn: formatarISBN(l.isbn),
+    edicao: `${l.edicao}°`,
+  }));
+
   return {
-    livros,
+    livros: livrosFormatado,
     qtdTotalDePaginas: Math.ceil(contador / itensPorPagina),
     paginaAtual: Number(pagina),
   };
@@ -113,15 +127,27 @@ export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina 
 
 export const obterLivro = async (id) => {
   // Id já vem validado pelo middleware
+
+  const select = {
+    id: true,
+    titulo: true,
+    isbn: true,
+    qtdCopias: true,
+    qtdDisponivel: true,
+    edicao: true,
+    autor: true,
+    editora: true,
+    categoria: true,
+  };
+
   const livro = await prisma.livro.findUnique({
     where: { id },
-    include: {
-      autor: true,
-      editora: true,
-      categoria: true,
-    },
+    select,
   });
   if (!livro) throw new AppError("Livro não contrado", 404);
+
+  livro.isbn = formatarISBN(livro.isbn);
+  livro.edicao = `${livro.edicao}°`;
 
   return livro;
 };

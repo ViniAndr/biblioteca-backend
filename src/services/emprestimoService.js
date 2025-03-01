@@ -7,7 +7,7 @@ import AppError from "../utils/AppError.js";
 import { validarId } from "../utils/validacao.js";
 import calcularDataDevolucao from "../utils/calcularDataDevolucao.js";
 import { MENSAGENS_ERRO, EMPRESTIMO_STATUS } from "../utils/constants.js";
-import { formatarData } from "../utils/formatador.js";
+import { formatarData, formatarTelefoneBR, formatarStatus, formatarISBN } from "../utils/formatador.js";
 
 // Funções auxiliares
 // verifica se existe o livro a ser solicitado/emprestado e se tem cópia disponivel
@@ -292,9 +292,11 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, c
   // Buscar pelo titulo do livro
   if (livro) {
     where.livro = {
-      titulo: {
-        contains: livro,
-        mode: "insensitive",
+      some: {
+        titulo: {
+          contains: livro,
+          mode: "insensitive",
+        },
       },
     };
   }
@@ -310,6 +312,7 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, c
     livro: {
       select: {
         titulo: true,
+        isbn: true,
       },
     },
   };
@@ -322,28 +325,117 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, c
     };
   }
 
-  // ainda não pensei no que mostrar no front
-  const emprestimos = await prisma.emprestimo.findMany({
-    where,
-    select,
-    take: Number(itensPorPagina),
-    skip: (Number(pagina) - 1) * Number(itensPorPagina),
-  });
+  const [emprestimos, contador] = await Promise.all([
+    // ainda não pensei no que mostrar no front
+    prisma.emprestimo.findMany({
+      where,
+      select,
+      orderBy: { dataSolicitacao: "desc" },
+      take: Number(itensPorPagina),
+      skip: (Number(pagina) - 1) * Number(itensPorPagina),
+    }),
 
-  // Diz o total de itens encontrados
-  const contador = await prisma.emprestimo.count({ where });
+    // Diz o total de itens encontrados
+    prisma.emprestimo.count({ where }),
+  ]);
 
   // Formatar as datas
-  const emprestimosFormatados = emprestimos.map((emprestimo) => ({
-    ...emprestimo,
-    dataSolicitacao: formatarData(emprestimo.dataSolicitacao),
-  }));
+  const emprestimosFormatados = emprestimos.map((emprestimo) => {
+    emprestimo.livro.isbn = formatarISBN(emprestimo.livro.isbn);
+    return {
+      ...emprestimo,
+      dataSolicitacao: formatarData(emprestimo.dataSolicitacao),
+    };
+  });
 
   return {
     emprestimos: emprestimosFormatados,
     qtdTotalDePaginas: Math.ceil(contador / itensPorPagina),
     paginaAtual: Number(pagina),
+    totalEmprestimos: contador,
   };
+};
+
+// ver detalhadamente o emprestimo
+export const obterEmprestimo = async (id, clienteId) => {
+  // id já vem validado pelo midlleware e clienteId pelo req
+
+  const where = { id };
+
+  if (clienteId) where.clienteId = clienteId;
+
+  const select = {
+    id: true,
+    status: true,
+    dataSolicitacao: true,
+    prazoRetirada: true,
+    dataEmprestimo: true,
+    prazoDevolucao: true,
+    dataDevolucao: true,
+    estadoDevolucao: true,
+    dataCancelamento: true,
+    renovacoes: true,
+    funcionario: {
+      select: {
+        id: true,
+        nome: true,
+      },
+    },
+    livro: {
+      select: {
+        id: true,
+        titulo: true,
+        isbn: true,
+        qtdCopias: true,
+        qtdDisponivel: true,
+        edicao: true,
+        autor: true,
+        editora: true,
+        categoria: true,
+      },
+    },
+  };
+
+  // Se for o funcionario que esteja acessando ele ver os dados do cliente
+  if (!clienteId) {
+    select.cliente = {
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        telefone: true,
+        logradouro: true,
+        numero: true,
+        bairro: true,
+        cidade: true,
+        estado: true,
+        cep: true,
+      },
+    };
+  }
+
+  const emprestimo = await prisma.emprestimo.findUnique({
+    where,
+    select,
+  });
+  if (!emprestimo) throw new AppError(MENSAGENS_ERRO.EMPRESTIMO_NAO_ENCONTRADO, 404);
+
+  // Formatações
+  emprestimo.status = formatarStatus(emprestimo.status);
+  emprestimo.livro.edicao = `${emprestimo.livro.edicao}°`;
+  emprestimo.livro.isbn = formatarISBN(emprestimo.livro.isbn);
+  emprestimo.dataSolicitacao = formatarData(emprestimo.dataSolicitacao);
+  emprestimo.prazoRetirada = formatarData(emprestimo.prazoRetirada);
+  emprestimo.dataEmprestimo = emprestimo.dataEmprestimo ? formatarData(emprestimo.dataEmprestimo) : "Aguardando";
+  emprestimo.prazoDevolucao = emprestimo.prazoDevolucao ? formatarData(emprestimo.prazoDevolucao) : "Aguardando";
+  emprestimo.dataDevolucao = emprestimo.dataDevolucao ? formatarData(emprestimo.dataDevolucao) : "Aguardando";
+  emprestimo.estadoDevolucao = emprestimo.estadoDevolucao || "Aguardando";
+  emprestimo.dataCancelamento = emprestimo.dataCancelamento ? formatarData(emprestimo.dataCancelamento) : "Aguardando";
+  if (emprestimo.cliente) {
+    emprestimo.cliente.telefone = formatarTelefoneBR(emprestimo.cliente.telefone);
+  }
+
+  return emprestimo;
 };
 
 // Lista os top 10 livros mais emprestados
@@ -369,6 +461,7 @@ export const listarLivrosMaisEmprestados = async () => {
     select: {
       id: true,
       titulo: true,
+      isbn: true,
     },
   });
 
@@ -380,6 +473,7 @@ export const listarLivrosMaisEmprestados = async () => {
     return {
       livroId: emprestimo.livroId,
       titulo: livro ? livro.titulo : "Desconhecido",
+      isbn: formatarISBN(livro.isbn),
       totalEmprestimos: emprestimo._count.livroId,
     };
   });

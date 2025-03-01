@@ -50,7 +50,7 @@ model Livro {
   isbn          String   @unique
   qtdCopias     Int      @default(1)
   qtdDisponivel Int      @default(1)
-  edicao        Int?
+  edicao        Int      @default(1)
 
   // Relacionamento com Autor
   autorId       Int
