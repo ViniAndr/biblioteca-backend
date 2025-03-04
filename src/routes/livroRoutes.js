@@ -25,6 +25,9 @@ router.get("/listar", authMiddleware, controller.listarTodos);
 // obter 1 livro (Todos, até não logado)
 router.get("/:id", authMiddleware, validarId, controller.obterPorId);
 
+// Consulta API de livros do Google para obter metadados
+router.get("/buscar-api/:isbn", authMiddleware, controleAcesso("funcionario"), controller.buscarLivroGoogle);
+
 // Middleware global de tratamento de erros
 router.use(handleErrors);
 

@@ -115,7 +115,7 @@ export const atualizarDados = async (id, dados) => {
   }
 
   if (Object.keys(dadosNovos).length === 0) {
-    throw new AppError("Nenhum dado válido para atualizar.", 400);
+    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
   }
 
   return await prisma.funcionario.update({

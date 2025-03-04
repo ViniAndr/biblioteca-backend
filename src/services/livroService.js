@@ -1,12 +1,31 @@
+import axios from "axios";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 import { validarLivro } from "../utils/validacao.js";
 import AppError from "../utils/AppError.js";
-import { limparNumeros, formatarISBN } from "../utils/formatador.js";
+import { limparNumeros, formatarISBN, formatarData } from "../utils/formatador.js";
+import { MENSAGENS_ERRO, EMPRESTIMO_STATUS } from "../utils/constants.js";
+
+// METODOS AUXILIAR
+// Verifica se Autor ou Editara existe e caso não, ele cria e retorna o ID.
+const obterAttSimplesOuCriar = async (nome, tabela) => {
+  let atributo = await prisma[tabela].findUnique({ where: { nome } });
+  if (!atributo) {
+    atributo = await prisma[tabela].create({ data: { nome } });
+  }
+  return atributo;
+};
 
 export const cadastrado = async (dados) => {
   const isbn = limparNumeros(dados.isbn);
+
+  // Se o funcionário enviou uma capa, pega o caminho, se não, usa a padrão
+  const capa = dados.capa || "";
+
+  // Converte os IDs das categorias para um array de números
+  const categoriasIds = dados.categoriaIds?.map((id) => Number(id)) || [];
+
   const dadosProntos = {
     titulo: dados.titulo,
     isbn,
@@ -15,7 +34,10 @@ export const cadastrado = async (dados) => {
     edicao: Number(dados.edicao),
     autorId: Number(dados.autorId),
     editoraId: Number(dados.editoraId),
-    categoriaId: Number(dados.categoriaId),
+    numeroPagina: dados.numeroPagina ? Number(dados.numeroPagina) : null,
+    publicadoEm: dados.publicadoEm ? dados.publicadoEm : null,
+    idioma: dados.idioma,
+    capa,
   };
 
   // validação
@@ -30,39 +52,97 @@ export const cadastrado = async (dados) => {
   const editora = await prisma.editora.findUnique({ where: { id: dadosProntos.editoraId } });
   if (!editora) throw new AppError("Editora não encontrada", 404);
 
-  const categoria = await prisma.categoria.findUnique({ where: { id: dadosProntos.categoriaId } });
-  if (!categoria) throw new AppError("Categoria não econtrada", 404);
+  if (categoriasIds.length === 0) throw new AppError("Pelo menos uma categoria deve ser informada", 400);
 
-  await prisma.livro.create({ data: { ...dadosProntos } });
-};
+  // Verifica se todas as categorias existem
+  const categorias = await prisma.categoria.findMany({
+    where: { id: { in: categoriasIds } },
+  });
 
-export const atualizar = async (id, dados) => {
-  // Id já vem validado pelo middleware
-  const campos = Object.keys(dados);
-
-  const livro = await prisma.livro.findUnique({ where: { id } });
-  if (!livro) throw new AppError("Livro não encontrado", 404);
-
-  const dadosNovos = campos.reduce((obj, campo) => {
-    if (dados[campo] === undefined || dados[campo] === livro[campo]) {
-      return obj; // Ignora valores iguais ou não definidos
-    }
-
-    if (campo === "titulo") {
-      obj[campo] = dados[campo].trim();
-    } else if (campo === "isbn") {
-      obj[campo] = limparNumeros(dados[campo].trim());
-    } else {
-      obj[campo] = Number(dados[campo]); // Se não for título nem ISBN, é número
-    }
-
-    return obj;
-  }, {});
-
-  if (Object.keys(dadosNovos).length === 0) {
-    throw new AppError("Nenhum dado válido para atualizar.", 400);
+  if (categorias.length !== categoriasIds.length) {
+    throw new AppError("Uma ou mais categorias não foram encontradas", 404);
   }
 
+  await prisma.livro.create({
+    data: {
+      ...dadosProntos,
+      categoria: {
+        connect: categoriasIds.map((id) => ({ id })),
+      },
+    },
+  });
+};
+
+// Atualizar cheio de validações
+export const atualizar = async (id, dados) => {
+  // O ID já vem validado pelo middleware
+
+  // Busca o livro para garantir que ele existe e obter as categorias atuais
+  const livro = await prisma.livro.findUnique({
+    where: { id },
+    include: { categoria: true }, // Inclui as categorias para comparar depois
+  });
+
+  if (!livro) {
+    throw new AppError(MENSAGENS_ERRO.LIVRO_NAO_ENCONTRADO, 404);
+  }
+
+  // Mapeia os dados recebidos e prepara apenas os que devem ser atualizados
+  const dadosNovos = {};
+
+  for (const campo in dados) {
+    const valorNovo = dados[campo]; // valor informado pelo funcionario
+    const valorAtual = livro[campo]; // valor já salvo
+
+    // Ignora campos que não foram enviados ou que já estão iguais
+    if (valorNovo === undefined || valorNovo === valorAtual) {
+      continue;
+    }
+
+    // Tratamento específico para cada campo
+    switch (campo) {
+      case "titulo":
+        dadosNovos[campo] = valorNovo.trim();
+        break;
+
+      case "isbn":
+        dadosNovos[campo] = limparNumeros(valorNovo.trim());
+        break;
+
+      case "categoriaIds":
+        // Atualiza as categorias (precisa usar `set` para alterar corretamente no Prisma)
+        dadosNovos.categoria = {
+          set: valorNovo.map((id) => ({ id: Number(id) })),
+        };
+        break;
+      // PROBLEMA - SE ALMENTAR O NUMERO DE CÓPIAS AUMENTA O DISPONIVEL?
+      case "qtdCopias":
+      case "qtdDisponivel":
+      case "edicao":
+      case "autorId":
+      case "editoraId":
+      case "numeroPagina": // Agora tratado corretamente
+        dadosNovos[campo] = Number(valorNovo);
+        break;
+
+      case "publicadoEm":
+      case "idioma":
+      case "capa":
+        // Esses campos devem ser mantidos como string
+        dadosNovos[campo] = valorNovo;
+        break;
+
+      default:
+        throw new AppError(`Campo inválido: ${campo}`, 400);
+    }
+  }
+
+  // Se nenhum dado foi alterado, retorna erro
+  if (Object.keys(dadosNovos).length === 0) {
+    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
+  }
+
+  // Atualiza o livro no banco de dados
   await prisma.livro.update({
     where: { id },
     data: dadosNovos,
@@ -74,11 +154,33 @@ export const deletar = async (id) => {
   const livro = await prisma.livro.findUnique({ where: { id } });
   if (!livro) throw new AppError("Livro não encontrado", 404);
 
-  await prisma.livro.delete({ where: { id } });
+  // verifico se tem algum emprestimo em andamento para esse livro
+  const emprestimoAtivo = await prisma.emprestimo.findFirst({
+    where: {
+      livroId: id,
+      status: { in: [EMPRESTIMO_STATUS.SOLICITADO, EMPRESTIMO_STATUS.EMPRESTADO, EMPRESTIMO_STATUS.ATRASADO] },
+    },
+  });
+
+  // Se houver um empréstimo em andamento, impedir a exclusão
+  if (emprestimoAtivo) {
+    throw new AppError(
+      "Não é possível excluir este livro, pois ele está emprestado ou possui uma solicitação pendente.",
+      400
+    );
+  }
+
+  await prisma.livro.update({
+    where: { id },
+    data: {
+      disponivel: false,
+      deletadoEm: new Date(),
+    },
+  });
 };
 
 export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina = 1, itensPorPagina) => {
-  const where = {};
+  const where = { disponivel: true };
 
   // Filtro de busca por título
   if (titulo) {
@@ -138,6 +240,7 @@ export const obterLivro = async (id) => {
     autor: true,
     editora: true,
     categoria: true,
+    disponivel: true,
   };
 
   const livro = await prisma.livro.findUnique({
@@ -150,4 +253,31 @@ export const obterLivro = async (id) => {
   livro.edicao = `${livro.edicao}°`;
 
   return livro;
+};
+
+export const buscarLivroGoogle = async (isbn) => {
+  const response = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+  // pegamos sempre o primeiro que aparecer
+  const livro = response.data.items?.[0]?.volumeInfo;
+  if (!livro) throw new AppError("Livro não encontrado na API do Google", 404);
+
+  // Dados tratados
+  const dadosLivro = {
+    titulo: livro.title,
+    autor: livro.authors ? livro.authors[0] : "Desconhecido",
+    editora: livro.publisher || "Desconhecida",
+    categorias: livro.categories || ["Literatura"],
+    publicadoEm: livro.publishedDate ? formatarData(new Date(livro.publishedDate)) : null,
+    descricao: livro.description || "",
+    numeroPagina: livro.pageCount || null,
+    idioma: livro.language || "PT",
+    capa: livro.imageLinks?.thumbnail || "",
+  };
+
+  // buscar ou criar Autor
+  dadosLivro.autor = await obterAttSimplesOuCriar(livro.authors[0], "autor");
+  // buscar ou criar Autor
+  dadosLivro.editora = await obterAttSimplesOuCriar(dadosLivro.editora, "editora");
+
+  return dadosLivro;
 };

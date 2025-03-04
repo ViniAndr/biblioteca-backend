@@ -53,3 +53,14 @@ export const obterPorId = async (req, res, next) => {
     next(error);
   }
 };
+
+export const buscarLivroGoogle = async (req, res, next) => {
+  const isbn = Number(req.params.isbn);
+
+  try {
+    const livro = await livroService.buscarLivroGoogle(isbn);
+    return res.status(200).json(livro);
+  } catch (error) {
+    next(error);
+  }
+};

@@ -71,7 +71,7 @@ export const validarEndereco = ({ logradouro, bairro, cidade, estado, cep }) => 
   validarEstado(estado);
 };
 
-export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, autorId, editoraId, categoriaId }) => {
+export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, autorId, editoraId, idioma }) => {
   if (!titulo || titulo.trim().length < 3) {
     throw new AppError("O título do livro é obrigatório e deve ter pelo menos 3 caracteres.", 400);
   }
@@ -101,8 +101,9 @@ export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, a
   if (!Number.isInteger(Number(editoraId)) || Number(editoraId) <= 0) {
     throw new AppError("O id da editora é invalido", 400);
   }
-  if (!Number.isInteger(Number(categoriaId)) || Number(categoriaId) <= 0) {
-    throw new AppError("O id da categoria é invalido", 400);
+
+  if (!idioma || typeof idioma !== "string" || idioma.length > 4) {
+    throw new AppError("Idioma invalido, use por exemplo: PT-BR, PT, EN", 400);
   }
 };
 

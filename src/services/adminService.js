@@ -8,6 +8,7 @@ import hashSenha from "../utils/hashSenha.js";
 import gerarToken from "../utils/gerarToken.js";
 import { validarEmail, validarSenha } from "../utils/validacao.js";
 import { autenticarUsuario } from "./UsuariosService.js";
+import { MENSAGENS_ERRO } from "../utils/constants.js";
 
 // criação feita apenas 1 vez!!!
 export const cadastrar = async () => {
@@ -30,7 +31,7 @@ export const login = async (dadosLogin) => {
 
   const adminAutenticado = await autenticarUsuario(dadosLogin, "admin");
   if (!adminAutenticado) {
-    throw new AppError("Credenciais inválidas. Verifique os dados fornecidos.", 401);
+    throw new AppError(MENSAGENS_ERRO.CREDENCIAIS_INVALIDAS, 401);
   }
 
   const token = gerarToken(adminAutenticado);
@@ -82,7 +83,7 @@ export const atualizarDados = async (id, dadosNovos) => {
   }
 
   if (Object.keys(dadosAtualizados).length === 0) {
-    throw new AppError("Nenhum dado válido para atualizar.", 400);
+    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
   }
 
   await prisma.admin.update({ where: { id }, data: dadosAtualizados });

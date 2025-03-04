@@ -4,6 +4,7 @@ const prisma = new PrismaClient();
 // utils
 import { validarNome } from "../utils/validacao.js";
 import AppError from "../utils/AppError.js";
+import { MENSAGENS_ERRO } from "../utils/constants.js";
 
 // Criar - autro, categoria ou editora
 export const criar = async (entidade, dados) => {
@@ -68,7 +69,7 @@ export const editar = async (entidade, id, dados) => {
   }
 
   if (Object.keys(dadosNovos).length === 0) {
-    throw new AppError("Nenhum dado válido para atualizar.", 400);
+    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
   }
 
   await prisma[entidade].update({

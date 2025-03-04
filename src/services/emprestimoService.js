@@ -13,7 +13,10 @@ import { formatarData, formatarTelefoneBR, formatarStatus, formatarISBN } from "
 // verifica se existe o livro a ser solicitado/emprestado e se tem cópia disponivel
 async function verificarLivroDisponivel(id) {
   const livro = await prisma.livro.findUnique({
-    where: { id },
+    where: {
+      id,
+      disponivel: true,
+    },
     select: { id, qtdDisponivel: true }, // Buscar só o necessário
   });
 
