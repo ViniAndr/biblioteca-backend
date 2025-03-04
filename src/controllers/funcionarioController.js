@@ -70,3 +70,14 @@ export const obterPorId = async (req, res, next) => {
     next(error);
   }
 };
+
+export const ativarDesativarFuncionario = async (req, res, next) => {
+  const funcionarioId = Number(req.params.id);
+  try {
+    const status = await funcionarioService.alterarStatusFuncionario(funcionarioId, req.body.senha);
+    console.log(status);
+    res.status(200).json({ mensagem: `${status.ativo ? "Ativação" : "Desativação"} realizada com sucesso.` });
+  } catch (error) {
+    next(error);
+  }
+};

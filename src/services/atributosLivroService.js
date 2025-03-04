@@ -40,7 +40,7 @@ export const obterTodos = async (entidade, nome, pagina = 1, itensPorPagina) => 
       id: true,
       nome: true,
       _count: {
-        select: { livros: true }, // Conta quantos livros cada autor tem
+        select: { livros: true }, // Conta quantos livros cada atributo tem
       },
     },
     take: Number(itensPorPagina),
@@ -54,6 +54,7 @@ export const obterTodos = async (entidade, nome, pagina = 1, itensPorPagina) => 
     [entidade]: todos,
     qtdTotalDePaginas: Math.ceil(contador / itensPorPagina),
     paginaAtual: Number(pagina),
+    total: contador,
   };
 };
 
@@ -82,6 +83,27 @@ export const deletar = async (entidade, id) => {
   // Id já vem validado por middleware
   const buscar = await prisma[entidade].findUnique({ where: { id } });
   if (!buscar) throw new AppError(`${entidade} não existe`, 404);
+
+  let count;
+
+  if (entidade === "categoria") {
+    count = await prisma.livro.count({
+      where: { categoria: { some: { id } } },
+    });
+  } else {
+    let campo = "";
+
+    if (entidade === "autor") campo = "autorId";
+    else if (entidade === "editora") campo = "editoraId";
+
+    count = await prisma.livro.count({
+      where: { [campo]: id },
+    });
+  }
+
+  if (count > 0) {
+    throw new AppError(`Não é possível excluir ${buscar.nome}, pois existem ${count} livro(s) associados.`, 400);
+  }
 
   await prisma[entidade].delete({ where: { id } });
 };

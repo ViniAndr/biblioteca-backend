@@ -1,7 +1,7 @@
 import { Router } from "express";
 const router = Router();
 
-//Controller
+// Controller
 import * as controller from "../controllers/livroController.js";
 
 // Middlewares
@@ -11,22 +11,22 @@ import validarId from "../middlewares/validarId.js";
 import controleAcesso from "../middlewares/controleAcesso.js";
 
 // Criar livro
-router.post("/cadastro", authMiddleware, controleAcesso("funcionario"), controller.cadastrado);
+router.post("/", authMiddleware, controleAcesso("funcionario"), controller.cadastrado);
 
-// editar livro
-router.put("/atualizar/:id", authMiddleware, controleAcesso("funcionario"), validarId, controller.atualizar);
+// Editar livro
+router.put("/:id", authMiddleware, controleAcesso("funcionario"), validarId, controller.atualizar);
 
-// deletar
-router.delete("/deletar/:id", authMiddleware, controleAcesso("funcionario"), validarId, controller.deletar);
+// Desativar livro (Exclusão lógica)
+router.patch("/:id/desativar", authMiddleware, controleAcesso("funcionario"), validarId, controller.deletar); // Rota mais semântica
 
-// listar todos livros (Todos, até não logado)
-router.get("/listar", authMiddleware, controller.listarTodos);
+// Listar todos os livros (todos, até não logados)
+router.get("/", controller.listarTodos);
 
-// obter 1 livro (Todos, até não logado)
-router.get("/:id", authMiddleware, validarId, controller.obterPorId);
+// Obter um livro específico
+router.get("/:id", validarId, controller.obterPorId);
 
 // Consulta API de livros do Google para obter metadados
-router.get("/buscar-api/:isbn", authMiddleware, controleAcesso("funcionario"), controller.buscarLivroGoogle);
+router.get("/google/:isbn", authMiddleware, controleAcesso("funcionario"), controller.buscarLivroGoogle); // Rota mais semântica
 
 // Middleware global de tratamento de erros
 router.use(handleErrors);

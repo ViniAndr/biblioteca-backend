@@ -12,6 +12,7 @@ import { juntarNomes } from "../utils/formatador.js";
 import verificarDuplicidade from "../utils/verificarDuplicidade.js";
 
 export const cadastrar = async (senhaAdmin) => {
+  validarSenha(senhaAdmin);
   const admin = await prisma.admin.findFirst({ select: { senha: true } });
   if (!admin) {
     throw new AppError("Administrador não encontrado.", 404);
@@ -144,6 +145,7 @@ export const obterFuncionarios = async (pagina = 1, nome, qtdItensPorPagina) => 
       id: true,
       nome: true,
       email: true,
+      ativo: true,
     },
     // take = pega tal quantidade de itens do BD
     take: Number(qtdItensPorPagina),
@@ -157,5 +159,40 @@ export const obterFuncionarios = async (pagina = 1, nome, qtdItensPorPagina) => 
     funcionarios,
     qtdTotalDePaginas: Math.ceil(contador / qtdItensPorPagina),
     paginaAtual: Number(pagina),
+    total: contador,
   };
+};
+
+// "Deletar" conta do funcionario. Será solicitado o funcionário e senha do ADMIN
+export const alterarStatusFuncionario = async (id, senhaAdmin) => {
+  validarSenha(senhaAdmin);
+
+  const admin = await prisma.admin.findFirst({ select: { senha: true } });
+  if (!admin) {
+    throw new AppError("Administrador não encontrado.", 404);
+  }
+
+  const senhaValida = await bcrypt.compare(senhaAdmin, admin.senha);
+  if (!senhaValida) {
+    throw new AppError("Senha do administrador incorreta.", 403);
+  }
+
+  const funcionario = await prisma.funcionario.findUnique({
+    where: { id },
+    select: { ativo: true },
+  });
+
+  if (!funcionario) {
+    throw new AppError("Funcionário não encontrado.", 404);
+  }
+
+  const status = await prisma.funcionario.update({
+    where: { id },
+    data: { ativo: !funcionario.ativo }, // Inverte o status sempre
+    select: {
+      ativo: true,
+    },
+  });
+
+  return { ativo: status.ativo };
 };

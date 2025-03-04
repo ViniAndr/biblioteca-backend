@@ -29,12 +29,12 @@ class App {
   }
 
   routes() {
-    this.app.use("/cliente", clienteRoutes);
-    this.app.use("/admin", adminRoutes);
-    this.app.use("/funcionario", funcionarioRoutes);
-    this.app.use("/livro", atributosRoutes);
-    this.app.use("/livro", livroRoutes);
-    this.app.use("/emprestimo", emprestimoRoutes);
+    this.app.use("/api/clientes", clienteRoutes);
+    this.app.use("/api/admin", adminRoutes);
+    this.app.use("/api/funcionarios", funcionarioRoutes);
+    this.app.use("/api/livros/atributos", atributosRoutes);
+    this.app.use("/api/livros", livroRoutes);
+    this.app.use("/api/emprestimos", emprestimoRoutes);
   }
 }
 

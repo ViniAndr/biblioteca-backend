@@ -4,7 +4,12 @@ const prisma = new PrismaClient();
 import bcrypt from "bcrypt";
 
 export const autenticarUsuario = async (dadosLogin, role) => {
-  const usuario = await prisma[role].findUnique({ where: { email: dadosLogin.email } });
+  const where = { email: dadosLogin.email };
+
+  // só faça login para o funcionario se for ativo
+  if (role === "funcionario") where.ativo = true;
+
+  const usuario = await prisma[role].findUnique({ where });
   if (!usuario) return null;
 
   const senhaValida = await bcrypt.compare(dadosLogin.senha, usuario.senha);

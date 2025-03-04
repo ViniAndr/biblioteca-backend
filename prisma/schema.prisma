@@ -39,6 +39,7 @@ model Funcionario {
   email       String    @unique
   senha       String
   role        String    @default("funcionario")
+  ativo       Boolean   @default(true) // indicar se o funcionário está ativo ou não
 
   // Relacionamento com Emprestimo
   emprestimos Emprestimo[]

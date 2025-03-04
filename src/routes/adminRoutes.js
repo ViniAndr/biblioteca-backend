@@ -1,28 +1,28 @@
 import { Router } from "express";
 const router = Router();
 
-// controller
+// Controller
 import * as adminController from "../controllers/adminController.js";
 
-// midllewares
+// Middlewares
 import authMiddleware from "../middlewares/authMiddleware.js";
 import handleErrors from "../middlewares/handleErrors.js";
 import controleAcesso from "../middlewares/controleAcesso.js";
 
-// criar conta **SERÁ FEITO PELO DEV, UMA ÚNICA CONTA COM CREDENCIAIS PADRÕES**
-router.post("/cadastro", adminController.criarConta);
+// Criar conta (Apenas uma única conta com credenciais padrões, feito pelo DEV)
+router.post("/", adminController.criarConta);
 
-// fazer o login na conta
+// Fazer login na conta
 router.post("/login", adminController.login);
 
-// ver perfil
+// Ver perfil do administrador
 router.get("/perfil", authMiddleware, controleAcesso("admin"), adminController.verPerfil);
 
-// atualizar dados de registro
-router.put("/atualizar", authMiddleware, controleAcesso("admin"), adminController.atualizarPerfil);
+// Atualizar dados de registro
+router.put("/perfil", authMiddleware, controleAcesso("admin"), adminController.atualizarPerfil);
 
-// resetar conta
-router.get("/resetar-conta", authMiddleware, controleAcesso("admin"), adminController.resetarConta);
+// Resetar conta do administrador
+router.patch("/reset", authMiddleware, controleAcesso("admin"), adminController.resetarConta); // alterado para patch
 
 // Middleware global de tratamento de erros
 router.use(handleErrors);

@@ -1,58 +1,52 @@
 import { Router } from "express";
 const router = Router();
 
-// controller
+// Controller
 import * as emprestimo from "../controllers/emprestimoController.js";
 
-// midllewares
+// Middlewares
 import authMiddleware from "../middlewares/authMiddleware.js";
 import handleErrors from "../middlewares/handleErrors.js";
 import validarId from "../middlewares/validarId.js";
 import controleAcesso from "../middlewares/controleAcesso.js";
 
-// Apenas o cliete tem acesso a essa rota
-router.post("/solicitar", authMiddleware, controleAcesso("cliente", true), emprestimo.solicitar);
+// Solicitar um empréstimo
+router.post("/", authMiddleware, controleAcesso("cliente", true), emprestimo.solicitar);
 
-// Cliente fazer empretimo diretamento com o funcionario
-router.post("/criar", authMiddleware, controleAcesso("funcionario"), emprestimo.fazerEmprestimo);
+// Criar um empréstimo (feito por funcionário)
+router.post("/funcionario", authMiddleware, controleAcesso("funcionario"), emprestimo.fazerEmprestimo);
 
-// Apenas o cliete tem acesso a essa rota
-router.put(
-  "/cancelar-solicitacao/:id",
+// Cancelar uma solicitação de empréstimo
+router.patch(
+  "/:id/cancelar",
   authMiddleware,
   controleAcesso("cliente", true),
   validarId,
   emprestimo.cancelarSolicitacao
 );
 
-// Retirar o livro após solicitação pelo cliente
-router.put(
-  "/confirmar-retirada/:id",
-  authMiddleware,
-  controleAcesso("funcionario"),
-  validarId,
-  emprestimo.confirmarRetirada
-);
+// Confirmar retirada de um livro após solicitação do cliente
+router.patch("/:id/retirada", authMiddleware, controleAcesso("funcionario"), validarId, emprestimo.confirmarRetirada);
 
-// Devolução de um livro
-router.put("/devolucao/:id", authMiddleware, controleAcesso("funcionario"), validarId, emprestimo.devolucao);
+// Devolver um livro
+router.patch("/:id/devolucao", authMiddleware, controleAcesso("funcionario"), validarId, emprestimo.devolucao);
 
-// renovar algum emprestimo, pode ser feito por qualquer pessoa logada
-router.put("/renovar/:id", authMiddleware, validarId, emprestimo.renovarEmprestimo);
+// Renovar um empréstimo
+router.patch("/:id/renovacao", authMiddleware, validarId, emprestimo.renovarEmprestimo);
 
-// lista todos os emprestimos e é acessado pelo funcionario, podendo usar filtros
-router.get("/listar", authMiddleware, controleAcesso("funcionario"), emprestimo.listarTodos);
+// Listar todos os empréstimos (acessado por funcionários)
+router.get("/", authMiddleware, controleAcesso("funcionario"), emprestimo.listarTodos);
 
-// Ver os detalhes de um emprestimo
-router.get("/obter-emprestimo/:id", authMiddleware, emprestimo.obterEmprestimo);
+// Obter detalhes de um empréstimo específico
+router.get("/:id", authMiddleware, emprestimo.obterEmprestimo);
 
-// cliente pode ver todo seu historico de emprestimos
-router.get("/historico-cliente", authMiddleware, controleAcesso("cliente", true), emprestimo.HistoricoCliente);
+// Ver histórico de empréstimos de um cliente específico
+router.get("/clientes/:id/historico", authMiddleware, controleAcesso("cliente", true), emprestimo.HistoricoCliente);
 
 // Listar os top X livros mais emprestados
 router.get("/top-livros", emprestimo.topLivrosEmprestados);
 
-// Listar os top X livros mais emprestados
+// Listar os top X clientes mais frequentes
 router.get("/top-clientes", authMiddleware, controleAcesso("funcionario"), emprestimo.clientesMaisFrequentes);
 
 // Middleware global de tratamento de erros

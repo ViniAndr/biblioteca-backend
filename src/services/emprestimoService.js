@@ -355,7 +355,7 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, c
     emprestimos: emprestimosFormatados,
     qtdTotalDePaginas: Math.ceil(contador / itensPorPagina),
     paginaAtual: Number(pagina),
-    totalEmprestimos: contador,
+    total: contador,
   };
 };
 

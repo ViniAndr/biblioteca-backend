@@ -346,6 +346,6 @@ export const verTodosClientes = async (pagina = 1, nome, qtdItensPorPagina) => {
     clientes: clientesFormatados,
     qtdTotalDePaginas: Math.ceil(contador / qtdItensPorPagina),
     paginaAtual: Number(pagina),
-    totalClientes: contador,
+    total: contador,
   };
 };

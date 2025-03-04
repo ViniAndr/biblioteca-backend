@@ -4,22 +4,22 @@ const router = Router();
 // controller
 import * as controller from "../controllers/atributosController.js";
 
-// midllewares
+// middlewares
 import authMiddleware from "../middlewares/authMiddleware.js";
 import validarEntidade from "../middlewares/validarEntidade.js";
 import handleErrors from "../middlewares/handleErrors.js";
 import validarId from "../middlewares/validarId.js";
 import controleAcesso from "../middlewares/controleAcesso.js";
 
-// Criar um novo categoria (Funcionario)
-router.post("/cadastro/:entidade", authMiddleware, controleAcesso("funcionario"), validarEntidade, controller.criar);
+// Criar um novo atributo (Funcionario)
+router.post("/:entidade", authMiddleware, controleAcesso("funcionario"), validarEntidade, controller.criar);
 
-// Obter todas as categorias (Funcionario)
-router.get("/listar/:entidade", authMiddleware, controleAcesso("funcionario"), validarEntidade, controller.obterTodos);
+// Obter todos os atributos (Funcionario)
+router.get("/:entidade", authMiddleware, controleAcesso("funcionario"), validarEntidade, controller.obterTodos);
 
-// Atualizar um categoria por ID (Funcionario)
+// Atualizar um atributo por ID (Funcionario)
 router.put(
-  "/atualizar/:entidade/:id",
+  "/:entidade/:id",
   authMiddleware,
   controleAcesso("funcionario"),
   validarEntidade,
@@ -27,9 +27,9 @@ router.put(
   controller.editar
 );
 
-// Deletar uma cátegoria (Funcionario)
+// Deletar um atributo por ID (Funcionario)
 router.delete(
-  "/deletar/:entidade/:id",
+  "/:entidade/:id/deletar",
   authMiddleware,
   controleAcesso("funcionario"),
   validarEntidade,

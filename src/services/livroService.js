@@ -224,6 +224,7 @@ export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina 
     livros: livrosFormatado,
     qtdTotalDePaginas: Math.ceil(contador / itensPorPagina),
     paginaAtual: Number(pagina),
+    total: contador,
   };
 };
 

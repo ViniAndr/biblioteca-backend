@@ -1,36 +1,41 @@
 import { Router } from "express";
 const router = Router();
 
-// controller
+// Controller
 import * as funcionarioController from "../controllers/funcionarioController.js";
 
-// midllewares
+// Middlewares
 import authMiddleware from "../middlewares/authMiddleware.js";
 import handleErrors from "../middlewares/handleErrors.js";
 import validarId from "../middlewares/validarId.js";
 import controleAcesso from "../middlewares/controleAcesso.js";
 
-// Criar conta, que é feito apenas pelo ADMIN
-router.post("/cadastro", authMiddleware, controleAcesso("admin"), funcionarioController.criarConta);
+// Criar funcionário (Apenas ADMIN)
+router.post("/", authMiddleware, controleAcesso("admin"), funcionarioController.criarConta);
 
 // Login
 router.post("/login", funcionarioController.login);
 
-// Alterar dados da conta
-router.put("/atualizar", authMiddleware, controleAcesso("funcionario"), funcionarioController.atualizarPerfil);
+// Alterar dados do próprio perfil
+router.put("/perfil", authMiddleware, controleAcesso("funcionario"), funcionarioController.atualizarPerfil);
 
-// Ver perfil
+// Obter dados do próprio perfil
 router.get("/perfil", authMiddleware, controleAcesso("funcionario"), funcionarioController.verPerfil);
 
-// Obter todos os funcionarios - ADMIN
-router.get("/listar", authMiddleware, controleAcesso("admin"), funcionarioController.listarTodos);
+// Obter todos os funcionários (Apenas ADMIN)
+router.get("/", authMiddleware, controleAcesso("admin"), funcionarioController.listarTodos);
 
-// Obter dados de um funcionario - ADMIN
+// Obter dados de um funcionário específico (Apenas ADMIN)
 router.get("/:id", authMiddleware, validarId, controleAcesso("admin"), funcionarioController.obterPorId);
 
-// Desativar/Deletar conta, feita apenas pelo ADMIN
-// deixo ID opcional na tebal emprestimo?
-// em vez de deletar apenas desativar?
+// Ativar ou desativar funcionário (Apenas ADMIN)
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  validarId,
+  controleAcesso("admin"),
+  funcionarioController.ativarDesativarFuncionario
+);
 
 // Middleware global de tratamento de erros
 router.use(handleErrors);
