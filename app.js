@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 
 // Middleware
 import handleErrors from "./src/middlewares/handleErrors.js";
@@ -26,6 +27,8 @@ class App {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(handleErrors); // Middleware de erro global
+    // Tornar a pasta uploads estática para ser servida
+    this.app.use("/uploads", express.static(path.resolve(__dirname, "src", "uploads")));
   }
 
   routes() {

@@ -328,7 +328,7 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, c
     };
   }
 
-  const [emprestimos, contador] = await Promise.all([
+  const [emprestimos, contador] = await prisma.$transaction([
     // ainda não pensei no que mostrar no front
     prisma.emprestimo.findMany({
       where,

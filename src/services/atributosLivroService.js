@@ -34,24 +34,27 @@ export const obterTodos = async (entidade, nome, pagina = 1, itensPorPagina) => 
       mode: "insensitive", // Ignora maiúsculas/minúsculas na busca
     };
   }
-  const todos = await prisma[entidade].findMany({
-    where,
-    select: {
-      id: true,
-      nome: true,
-      _count: {
-        select: { livros: true }, // Conta quantos livros cada atributo tem
-      },
-    },
-    take: Number(itensPorPagina),
-    skip: (Number(pagina) - 1) * Number(itensPorPagina),
-  });
 
-  // Conta o total de autores para paginação
-  const contador = await prisma[entidade].count({ where });
+  const [dados, contador] = await prisma.$transaction([
+    prisma[entidade].findMany({
+      where,
+      select: {
+        id: true,
+        nome: true,
+        _count: {
+          select: { livros: true }, // Conta quantos livros cada atributo tem
+        },
+      },
+      take: Number(itensPorPagina),
+      skip: (Number(pagina) - 1) * Number(itensPorPagina),
+    }),
+
+    // Conta o total de autores para paginação
+    prisma[entidade].count({ where }),
+  ]);
 
   return {
-    [entidade]: todos,
+    [entidade]: dados,
     qtdTotalDePaginas: Math.ceil(contador / itensPorPagina),
     paginaAtual: Number(pagina),
     total: contador,

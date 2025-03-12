@@ -316,7 +316,7 @@ export const verTodosClientes = async (pagina = 1, nome, qtdItensPorPagina) => {
     };
   }
 
-  const [clientes, contador] = await Promise.all([
+  const [clientes, contador] = await prisma.$transaction([
     prisma.cliente.findMany({
       where,
       select: {

@@ -139,21 +139,23 @@ export const obterFuncionarios = async (pagina = 1, nome, qtdItensPorPagina) => 
     };
   }
 
-  const funcionarios = await prisma.funcionario.findMany({
-    where,
-    select: {
-      id: true,
-      nome: true,
-      email: true,
-      ativo: true,
-    },
-    // take = pega tal quantidade de itens do BD
-    take: Number(qtdItensPorPagina),
-    // skip = serve para "pular" itens já trazidos em páginas anteriores
-    skip: (Number(pagina) - 1) * Number(qtdItensPorPagina),
-  });
-  // Diz o total de itens encontrados
-  const contador = await prisma.funcionario.count({ where });
+  const [funcionarios, contador] = await prisma.$transaction([
+    prisma.funcionario.findMany({
+      where,
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        ativo: true,
+      },
+      // take = pega tal quantidade de itens do BD
+      take: Number(qtdItensPorPagina),
+      // skip = serve para "pular" itens já trazidos em páginas anteriores
+      skip: (Number(pagina) - 1) * Number(qtdItensPorPagina),
+    }),
+    // Diz o total de itens encontrados
+    prisma.funcionario.count({ where }),
+  ]);
 
   return {
     funcionarios,

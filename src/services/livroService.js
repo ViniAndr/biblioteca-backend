@@ -205,14 +205,16 @@ export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina 
     categoria: true,
   };
 
-  const livros = await prisma.livro.findMany({
-    where,
-    select,
-    take: Number(itensPorPagina),
-    skip: (Number(pagina) - 1) * Number(itensPorPagina),
-  });
+  const [livros, contador] = await prisma.$transaction([
+    prisma.livro.findMany({
+      where,
+      select,
+      take: Number(itensPorPagina),
+      skip: (Number(pagina) - 1) * Number(itensPorPagina),
+    }),
 
-  const contador = await prisma.livro.count({ where });
+    await prisma.livro.count({ where }),
+  ]);
 
   const livrosFormatado = livros.map((l) => ({
     ...l,
