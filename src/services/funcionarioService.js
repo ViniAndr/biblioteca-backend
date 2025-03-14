@@ -18,7 +18,7 @@ export const cadastrar = async (senhaAdmin) => {
     throw new AppError("Administrador não encontrado.", 404);
   }
 
-  const senhaValida = await bcrypt.compare(senhaAdmin.senha, admin.senha);
+  const senhaValida = await bcrypt.compare(senhaAdmin, admin.senha);
   if (!senhaValida) {
     throw new AppError("Senha do administrador incorreta.", 403);
   }
@@ -129,7 +129,7 @@ export const atualizarDados = async (id, dados) => {
   });
 };
 
-export const obterFuncionarios = async (pagina = 1, nome, qtdItensPorPagina) => {
+export const obterFuncionarios = async (pagina = 1, nome, itensPorPagina) => {
   const where = {};
 
   if (nome) {
@@ -149,9 +149,9 @@ export const obterFuncionarios = async (pagina = 1, nome, qtdItensPorPagina) => 
         ativo: true,
       },
       // take = pega tal quantidade de itens do BD
-      take: Number(qtdItensPorPagina),
+      take: Number(itensPorPagina),
       // skip = serve para "pular" itens já trazidos em páginas anteriores
-      skip: (Number(pagina) - 1) * Number(qtdItensPorPagina),
+      skip: (Number(pagina) - 1) * Number(itensPorPagina),
     }),
     // Diz o total de itens encontrados
     prisma.funcionario.count({ where }),
@@ -159,7 +159,7 @@ export const obterFuncionarios = async (pagina = 1, nome, qtdItensPorPagina) => 
 
   return {
     funcionarios,
-    qtdTotalDePaginas: Math.ceil(contador / qtdItensPorPagina),
+    qtdTotalDePaginas: contador > 0 ? Math.ceil(contador / itensPorPagina) : 1,
     paginaAtual: Number(pagina),
     total: contador,
   };

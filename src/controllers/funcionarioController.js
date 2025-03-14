@@ -3,7 +3,7 @@ import * as funcionarioService from "../services/funcionarioService.js";
 export const criarConta = async (req, res, next) => {
   try {
     // queremos ver esses dados ao serem criados
-    const novoFuncionario = await funcionarioService.cadastrar(req.body);
+    const novoFuncionario = await funcionarioService.cadastrar(req.body.senha);
     return res.status(201).json({
       mensagem: "Funcionário cadastrado com sucesso",
       novoFuncionario,

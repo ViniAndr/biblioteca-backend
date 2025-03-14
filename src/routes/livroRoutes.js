@@ -9,9 +9,10 @@ import handleErrors from "../middlewares/handleErrors.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import validarId from "../middlewares/validarId.js";
 import controleAcesso from "../middlewares/controleAcesso.js";
+import { upload, processarImagem } from "../middlewares/uploadMiddleware.js";
 
 // Criar livro
-router.post("/", authMiddleware, controleAcesso("funcionario"), controller.cadastrado);
+router.post("/", authMiddleware, controleAcesso("funcionario"), upload, processarImagem, controller.cadastrado);
 
 // Editar livro
 router.put("/:id", authMiddleware, controleAcesso("funcionario"), validarId, controller.atualizar);

@@ -14,9 +14,7 @@ export const criar = async (entidade, dados) => {
   const buscarPorNome = await prisma[entidade].findUnique({ where: { nome } });
   if (buscarPorNome)
     throw new AppError(
-      `${entidade == "autor" ? "Esse" : "Essa"} ${entidade} já está ${
-        entidade == "autor" ? "cadastrado" : "cadastrada"
-      }`,
+      `${entidade == "autor" ? "Esse" : "Essa"} ${entidade} já está ${entidade == "autor" ? "cadastrado" : "cadastrada"}`,
       400
     );
 
@@ -55,7 +53,7 @@ export const obterTodos = async (entidade, nome, pagina = 1, itensPorPagina) => 
 
   return {
     [entidade]: dados,
-    qtdTotalDePaginas: Math.ceil(contador / itensPorPagina),
+    qtdTotalDePaginas: contador > 0 ? Math.ceil(contador / itensPorPagina) : 1,
     paginaAtual: Number(pagina),
     total: contador,
   };

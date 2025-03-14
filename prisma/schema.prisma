@@ -55,6 +55,7 @@ model Livro {
   descricao     String?
   numeroPagina  Int?
   capa          String   @default("")
+  capaPequena   String   @default("")
   publicadoEm   DateTime?
   idioma        String   @default("pt-BR") // O front-end cuida da validação - pós não é dado sensível
   disponivel    Boolean  @default(true) // indica se o livro foi apagado ou não

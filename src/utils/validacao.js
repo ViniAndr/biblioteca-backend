@@ -85,10 +85,7 @@ export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, a
   }
 
   if (!Number.isInteger(qtdDisponivel) || qtdDisponivel < 0 || qtdDisponivel > qtdCopias) {
-    throw new AppError(
-      "A quantidade disponível deve ser um número inteiro entre 0 e a quantidade total de cópias.",
-      400
-    );
+    throw new AppError("A quantidade disponível deve ser um número inteiro entre 0 e a quantidade total de cópias.", 400);
   }
 
   if (!Number.isInteger(edicao) || edicao < 1) {
@@ -102,7 +99,7 @@ export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, a
     throw new AppError("O id da editora é invalido", 400);
   }
 
-  if (!idioma || typeof idioma !== "string" || idioma.length > 4) {
+  if (!idioma || typeof idioma !== "string" || idioma.length > 5) {
     throw new AppError("Idioma invalido, use por exemplo: PT-BR, PT, EN", 400);
   }
 };

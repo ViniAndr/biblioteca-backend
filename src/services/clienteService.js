@@ -306,7 +306,7 @@ export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
   });
 };
 
-export const verTodosClientes = async (pagina = 1, nome, qtdItensPorPagina) => {
+export const verTodosClientes = async (pagina = 1, nome, itensPorPagina) => {
   const where = {};
 
   if (nome) {
@@ -327,9 +327,9 @@ export const verTodosClientes = async (pagina = 1, nome, qtdItensPorPagina) => {
         estado: true,
       },
       // take = pega tal quantidade de itens do BD
-      take: Number(qtdItensPorPagina),
+      take: Number(itensPorPagina),
       // skip = serve para "pular" itens já trazidos em páginas anteriores
-      skip: (Number(pagina) - 1) * Number(qtdItensPorPagina),
+      skip: (Number(pagina) - 1) * Number(itensPorPagina),
     }),
 
     // Diz o total de itens encontrados
@@ -344,7 +344,7 @@ export const verTodosClientes = async (pagina = 1, nome, qtdItensPorPagina) => {
 
   return {
     clientes: clientesFormatados,
-    qtdTotalDePaginas: Math.ceil(contador / qtdItensPorPagina),
+    qtdTotalDePaginas: contador > 0 ? Math.ceil(contador / itensPorPagina) : 1,
     paginaAtual: Number(pagina),
     total: contador,
   };

@@ -2,7 +2,7 @@ import * as livroService from "../services/livroService.js";
 
 export const cadastrado = async (req, res, next) => {
   try {
-    await livroService.cadastrado(req.body);
+    await livroService.cadastrado(req.body, req.file?.path, req.file?.pequena);
 
     return res.status(200).json({
       mensagem: "Livro cadastrado com sucesso",

@@ -17,27 +17,29 @@ const obterAttSimplesOuCriar = async (nome, tabela) => {
   return atributo;
 };
 
-export const cadastrado = async (dados) => {
+export const cadastrado = async (dados, caminhoCapa, caminhoCapaPequena) => {
   const isbn = limparNumeros(dados.isbn);
 
   // Se o funcionário enviou uma capa, pega o caminho, se não, usa a padrão
-  const capa = dados.capa || "";
+  const capa = caminhoCapa || "";
+  const capaPequena = caminhoCapaPequena || "";
 
-  // Converte os IDs das categorias para um array de números
   const categoriasIds = dados.categoriaIds?.map((id) => Number(id)) || [];
 
   const dadosProntos = {
     titulo: dados.titulo,
     isbn,
     qtdCopias: Number(dados.qtdCopias),
-    qtdDisponivel: Number(dados.qtdDisponivel),
+    qtdDisponivel: Number(dados.qtdCopias),
     edicao: Number(dados.edicao),
     autorId: Number(dados.autorId),
     editoraId: Number(dados.editoraId),
     numeroPagina: dados.numeroPagina ? Number(dados.numeroPagina) : null,
     publicadoEm: dados.publicadoEm ? dados.publicadoEm : null,
-    idioma: dados.idioma,
+    idioma: typeof dados.idioma == "string" ? dados.idioma.trim() : null,
     capa,
+    capaPequena,
+    descricao: dados.descricao,
   };
 
   // validação
@@ -164,10 +166,7 @@ export const deletar = async (id) => {
 
   // Se houver um empréstimo em andamento, impedir a exclusão
   if (emprestimoAtivo) {
-    throw new AppError(
-      "Não é possível excluir este livro, pois ele está emprestado ou possui uma solicitação pendente.",
-      400
-    );
+    throw new AppError("Não é possível excluir este livro, pois ele está emprestado ou possui uma solicitação pendente.", 400);
   }
 
   await prisma.livro.update({
@@ -200,9 +199,14 @@ export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina 
     qtdCopias: true,
     qtdDisponivel: true,
     edicao: true,
+    descricao: true,
+    numeroPagina: true,
+    publicadoEm: true,
     autor: true,
     editora: true,
     categoria: true,
+    idioma: true,
+    capa: true,
   };
 
   const [livros, contador] = await prisma.$transaction([
@@ -213,7 +217,7 @@ export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina 
       skip: (Number(pagina) - 1) * Number(itensPorPagina),
     }),
 
-    await prisma.livro.count({ where }),
+    prisma.livro.count({ where }),
   ]);
 
   const livrosFormatado = livros.map((l) => ({
@@ -224,7 +228,7 @@ export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina 
 
   return {
     livros: livrosFormatado,
-    qtdTotalDePaginas: Math.ceil(contador / itensPorPagina),
+    qtdTotalDePaginas: contador > 0 ? Math.ceil(contador / itensPorPagina) : 1,
     paginaAtual: Number(pagina),
     total: contador,
   };
@@ -240,10 +244,14 @@ export const obterLivro = async (id) => {
     qtdCopias: true,
     qtdDisponivel: true,
     edicao: true,
+    descricao: true,
+    numeroPagina: true,
+    publicadoEm: true,
     autor: true,
     editora: true,
     categoria: true,
-    disponivel: true,
+    idioma: true,
+    capa: true,
   };
 
   const livro = await prisma.livro.findUnique({
@@ -274,7 +282,8 @@ export const buscarLivroGoogle = async (isbn) => {
     descricao: livro.description || "",
     numeroPagina: livro.pageCount || null,
     idioma: livro.language || "PT",
-    capa: livro.imageLinks?.thumbnail || "",
+    capa: livro.imageLinks?.thumbnail?.replace("&zoom=1", "") || "",
+    capaPequena: livro.imageLinks?.thumbnail || "",
   };
 
   // buscar ou criar Autor
