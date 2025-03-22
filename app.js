@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import cors from "cors";
 
 // Middleware
 import handleErrors from "./src/middlewares/handleErrors.js";
@@ -34,6 +35,7 @@ class App {
     this.app.use(handleErrors); // Middleware de erro global
     // Tornar a pasta uploads estática para ser servida
     this.app.use("/api/uploads", express.static(path.resolve(__dirname, "src", "uploads")));
+    this.app.use(cors());
   }
 
   routes() {
