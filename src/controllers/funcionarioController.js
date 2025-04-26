@@ -51,10 +51,10 @@ export const atualizarPerfil = async (req, res, next) => {
 
 export const listarTodos = async (req, res, next) => {
   // Parametros opcionais para FILTROS
-  const { pagina, nomeCliente, qtdItensPorPagina = 10 } = req.query;
+  const { pagina, nomeFuncionario, qtdItensPorPagina = 10 } = req.query;
   const itensPorPagina = Number(qtdItensPorPagina);
   try {
-    const funcionarios = await funcionarioService.obterFuncionarios(pagina, nomeCliente, itensPorPagina);
+    const funcionarios = await funcionarioService.obterFuncionarios(pagina, nomeFuncionario, itensPorPagina);
     res.status(200).json(funcionarios);
   } catch (error) {
     next(error);

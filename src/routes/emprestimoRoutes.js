@@ -17,13 +17,7 @@ router.post("/", authMiddleware, controleAcesso("cliente", true), emprestimo.sol
 router.post("/funcionario", authMiddleware, controleAcesso("funcionario"), emprestimo.fazerEmprestimo);
 
 // Cancelar uma solicitação de empréstimo
-router.patch(
-  "/:id/cancelar",
-  authMiddleware,
-  controleAcesso("cliente", true),
-  validarId,
-  emprestimo.cancelarSolicitacao
-);
+router.patch("/:id/cancelar", authMiddleware, controleAcesso("cliente", true), validarId, emprestimo.cancelarSolicitacao);
 
 // Confirmar retirada de um livro após solicitação do cliente
 router.patch("/:id/retirada", authMiddleware, controleAcesso("funcionario"), validarId, emprestimo.confirmarRetirada);
@@ -42,9 +36,6 @@ router.get("/:id", authMiddleware, emprestimo.obterEmprestimo);
 
 // Ver histórico de empréstimos de um cliente específico
 router.get("/clientes/:id/historico", authMiddleware, controleAcesso("cliente", true), emprestimo.HistoricoCliente);
-
-// Listar os top X livros mais emprestados
-router.get("/top-livros", emprestimo.topLivrosEmprestados);
 
 // Listar os top X clientes mais frequentes
 router.get("/top-clientes", authMiddleware, controleAcesso("funcionario"), emprestimo.clientesMaisFrequentes);

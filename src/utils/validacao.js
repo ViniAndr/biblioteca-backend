@@ -7,7 +7,7 @@ export const validarNome = (nome) => {
   }
 
   const nomeMinusculo = nome.toLowerCase().trim();
-  const regexNome = /^[a-zà-ú\s]{3,40}$/i; // para aceita nome composto
+  const regexNome = /^[a-zà-ú.\s]{3,40}$/i; // para aceita nome composto
   if (!regexNome.test(nomeMinusculo)) {
     throw new AppError("O nome deve conter apenas letras e ter entre 3 e 40 caracteres", 400);
   }
@@ -85,7 +85,10 @@ export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, a
   }
 
   if (!Number.isInteger(qtdDisponivel) || qtdDisponivel < 0 || qtdDisponivel > qtdCopias) {
-    throw new AppError("A quantidade disponível deve ser um número inteiro entre 0 e a quantidade total de cópias.", 400);
+    throw new AppError(
+      "A quantidade disponível deve ser um número inteiro entre 0 e a quantidade total de cópias.",
+      400
+    );
   }
 
   if (!Number.isInteger(edicao) || edicao < 1) {

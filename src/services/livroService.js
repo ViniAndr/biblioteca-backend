@@ -166,7 +166,10 @@ export const deletar = async (id) => {
 
   // Se houver um empréstimo em andamento, impedir a exclusão
   if (emprestimoAtivo) {
-    throw new AppError("Não é possível excluir este livro, pois ele está emprestado ou possui uma solicitação pendente.", 400);
+    throw new AppError(
+      "Não é possível excluir este livro, pois ele está emprestado ou possui uma solicitação pendente.",
+      400
+    );
   }
 
   await prisma.livro.update({
@@ -178,7 +181,7 @@ export const deletar = async (id) => {
   });
 };
 
-export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina = 1, itensPorPagina) => {
+export const verTodosLivros = async (titulo, autor, editora, categoria, pagina = 1, itensPorPagina) => {
   const where = { disponivel: true };
 
   // Filtro de busca por título
@@ -197,16 +200,10 @@ export const verTodosLivvros = async (titulo, autor, editora, categoria, pagina 
     titulo: true,
     isbn: true,
     qtdCopias: true,
-    qtdDisponivel: true,
-    edicao: true,
-    descricao: true,
-    numeroPagina: true,
-    publicadoEm: true,
     autor: true,
     editora: true,
     categoria: true,
-    idioma: true,
-    capa: true,
+    capaPequena: true,
   };
 
   const [livros, contador] = await prisma.$transaction([
@@ -283,7 +280,7 @@ export const buscarLivroGoogle = async (isbn) => {
     numeroPagina: livro.pageCount || null,
     idioma: livro.language || "PT",
     capa: livro.imageLinks?.thumbnail?.replace("&zoom=1", "") || "",
-    capaPequena: livro.imageLinks?.thumbnail || "",
+    capaPequena: livro.imageLinks?.thumbnail?.replace("&zoom=1", "&zoom=2") || "",
   };
 
   // buscar ou criar Autor
@@ -292,4 +289,53 @@ export const buscarLivroGoogle = async (isbn) => {
   dadosLivro.editora = await obterAttSimplesOuCriar(dadosLivro.editora, "editora");
 
   return dadosLivro;
+};
+
+// Lista os top 10 livros mais emprestados
+export const listarLivrosMaisEmprestados = async () => {
+  const STATUS_VALIDOS = [EMPRESTIMO_STATUS.EMPRESTADO, EMPRESTIMO_STATUS.DEVOLVIDO, EMPRESTIMO_STATUS.ATRASADO];
+
+  const livrosMaisEmprestados = await prisma.emprestimo.groupBy({
+    by: ["livroId"], // Agrupa pelo ID do livro
+    where: {
+      status: { in: STATUS_VALIDOS }, // apenas os que de fatos foram para a mão do cliente
+    },
+    _count: { livroId: true }, // Conta quantas vezes cada livroId aparece
+    orderBy: { _count: { livroId: "desc" } }, // Ordena do maior para o menor
+    take: 10, // Pega apenas os 10 primeiros resultados
+  });
+
+  // Agora buscamos os detalhes dos livros usando os IDs encontrados
+  const livroIds = livrosMaisEmprestados.map((item) => item.livroId);
+
+  const livrosDetalhados = await prisma.livro.findMany({
+    // usado o in ao inves do Promisse.all porque aqui é apenas uma consulta, já no promisse são varias ao mesmo tempo
+    where: { id: { in: livroIds } },
+    select: {
+      id: true,
+      titulo: true,
+      isbn: true,
+      capaPequena: true,
+      categoria: true,
+      autor: true,
+    },
+  });
+
+  // Juntar os dados dos livros com a contagem de empréstimos
+  const resultadoFinal = livrosMaisEmprestados.map((emprestimo) => {
+    // .find() é um método do Array - Ele percorre um array e retorna o primeiro elemento que satisfaz a condição passada.
+    // verifico se o livro tem o id igual ao do emprestimo para juntar os dados úteis
+    const livro = livrosDetalhados.find((l) => l.id === emprestimo.livroId);
+    return {
+      livroId: emprestimo.livroId,
+      titulo: livro ? livro.titulo : "Desconhecido",
+      isbn: formatarISBN(livro.isbn),
+      totalEmprestimos: emprestimo._count.livroId,
+      capa: livro.capaPequena,
+      categoria: livro.categoria,
+      autor: livro.autor,
+    };
+  });
+
+  return resultadoFinal;
 };

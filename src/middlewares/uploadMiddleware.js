@@ -20,7 +20,7 @@ const armazenamento = multer.memoryStorage(); // Armazena na memória para proce
 const upload = multer({
   storage: armazenamento,
   limits: {
-    fileSize: 2 * 1024 * 1024, // 5MB máximo
+    fileSize: 2 * 1024 * 1024, // 2MB máximo
   },
   fileFilter: (req, file, cb) => {
     const tiposPermitidos = ["image/jpeg", "image/png"];
@@ -54,8 +54,8 @@ const processarImagem = async (req, res, next) => {
     // Criar imagem grande
     await sharp(req.file.buffer).resize({ width: 575 }).jpeg({ quality: 70 }).toFile(caminhoGrande);
 
-    // Criar imagem pequena (128x192)
-    await sharp(req.file.buffer).resize(128, 192, { fit: "cover" }).jpeg({ quality: 100 }).toFile(caminhoPequena);
+    // Criar imagem pequena (300x450)
+    await sharp(req.file.buffer).resize(300, 450, { fit: "cover" }).jpeg({ quality: 100 }).toFile(caminhoPequena);
 
     // Atualizar os caminhos no req.file
     req.file.filename = nomeArquivo;

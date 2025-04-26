@@ -114,15 +114,6 @@ export const HistoricoCliente = async (req, res, next) => {
   }
 };
 
-export const topLivrosEmprestados = async (req, res, next) => {
-  try {
-    const topLivros = await service.listarLivrosMaisEmprestados();
-    return res.status(200).json(topLivros);
-  } catch (error) {
-    next(error);
-  }
-};
-
 export const clientesMaisFrequentes = async (req, res, next) => {
   try {
     const topClientes = await service.listarClientesMaisFrequentes();

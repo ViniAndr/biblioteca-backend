@@ -37,7 +37,7 @@ export const listarTodos = async (req, res, next) => {
   const { titulo, autor, editora, categoria, pagina, qtdItensPorPagina = 10 } = req.query;
   const itensPorPagina = Number(qtdItensPorPagina);
   try {
-    const livros = await livroService.verTodosLivvros(titulo, autor, editora, categoria, pagina, itensPorPagina);
+    const livros = await livroService.verTodosLivros(titulo, autor, editora, categoria, pagina, itensPorPagina);
     return res.status(200).json(livros);
   } catch (error) {
     next(error);
@@ -60,6 +60,15 @@ export const buscarLivroGoogle = async (req, res, next) => {
   try {
     const livro = await livroService.buscarLivroGoogle(isbn);
     return res.status(200).json(livro);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const topLivrosEmprestados = async (req, res, next) => {
+  try {
+    const topLivros = await livroService.listarLivrosMaisEmprestados();
+    return res.status(200).json(topLivros);
   } catch (error) {
     next(error);
   }

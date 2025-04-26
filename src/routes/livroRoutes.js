@@ -23,6 +23,9 @@ router.patch("/:id/desativar", authMiddleware, controleAcesso("funcionario"), va
 // Listar todos os livros (todos, até não logados)
 router.get("/", controller.listarTodos);
 
+// Listar os top 10 livros mais emprestados
+router.get("/top-livros", controller.topLivrosEmprestados);
+
 // Obter um livro específico
 router.get("/:id", validarId, controller.obterPorId);
 

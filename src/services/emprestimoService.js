@@ -73,8 +73,7 @@ async function Verificacoes(clienteId, livroId) {
   // Checar se esse cliente já fez alguma solicitação anterior do mesmo livro e está em SOLICITADO ou EMPRESTADO
   if (emprestimos.duplicidade > 0) throw new AppError("Você já tem um empréstimo desse livro.", 400);
   // o Cliente só pode ter no maximo 3 emprestimo/solicitação em andamento
-  if (emprestimos.totalEmprestimos >= 3)
-    throw new AppError("Você já tem o máximo de empréstimos andamento permitidos.", 400);
+  if (emprestimos.totalEmprestimos >= 3) throw new AppError("Você já tem o máximo de empréstimos andamento permitidos.", 400);
 }
 
 // ########## FUNÇÕES DO EMPRESTIMO DE LIVRO ##########
@@ -218,10 +217,7 @@ export const confirmarRetirada = async (funcionarioId, emprestimoId) => {
 
 export const devolucao = async (emprestimoId, estadoDevolucao) => {
   // Id do emprestimo já vem valdiado pelo middleware
-  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [
-    EMPRESTIMO_STATUS.EMPRESTADO,
-    EMPRESTIMO_STATUS.ATRASADO,
-  ]);
+  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [EMPRESTIMO_STATUS.EMPRESTADO, EMPRESTIMO_STATUS.ATRASADO]);
 
   if (!estadoDevolucao || typeof estadoDevolucao !== "string") {
     throw new AppError("Informe um estado para o livro", 400);
@@ -248,10 +244,7 @@ export const devolucao = async (emprestimoId, estadoDevolucao) => {
 
 export const renovarEmprestimo = async (emprestimoId) => {
   // Id do emprestimo já vem valdiado pelo middleware
-  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [
-    EMPRESTIMO_STATUS.EMPRESTADO,
-    EMPRESTIMO_STATUS.ATRASADO,
-  ]);
+  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [EMPRESTIMO_STATUS.EMPRESTADO, EMPRESTIMO_STATUS.ATRASADO]);
 
   // controle sobre quantas renovações poderá ser feitas.
   const maxRenovacoes = 2;
@@ -265,10 +258,7 @@ export const renovarEmprestimo = async (emprestimoId) => {
   const aberturaRenovacao = addDays(prazoDevolucao, -2);
 
   if (isBefore(hoje, aberturaRenovacao) || isAfter(hoje, prazoDevolucao)) {
-    throw new AppError(
-      `Renovação só permitida entre ${formatarData(aberturaRenovacao)} e ${formatarData(prazoDevolucao)}`,
-      400
-    );
+    throw new AppError(`Renovação só permitida entre ${formatarData(aberturaRenovacao)} e ${formatarData(prazoDevolucao)}`, 400);
   }
 
   const renovacao = await prisma.emprestimo.update({
@@ -439,49 +429,6 @@ export const obterEmprestimo = async (id, clienteId) => {
   }
 
   return emprestimo;
-};
-
-// Lista os top 10 livros mais emprestados
-export const listarLivrosMaisEmprestados = async () => {
-  const STATUS_VALIDOS = [EMPRESTIMO_STATUS.EMPRESTADO, EMPRESTIMO_STATUS.DEVOLVIDO, EMPRESTIMO_STATUS.ATRASADO];
-
-  const livrosMaisEmprestados = await prisma.emprestimo.groupBy({
-    by: ["livroId"], // Agrupa pelo ID do livro
-    where: {
-      status: { in: STATUS_VALIDOS }, // apenas os que de fatos foram para a mão do cliente
-    },
-    _count: { livroId: true }, // Conta quantas vezes cada livroId aparece
-    orderBy: { _count: { livroId: "desc" } }, // Ordena do maior para o menor
-    take: 10, // Pega apenas os 10 primeiros resultados
-  });
-
-  // Agora buscamos os detalhes dos livros usando os IDs encontrados
-  const livroIds = livrosMaisEmprestados.map((item) => item.livroId);
-
-  const livrosDetalhados = await prisma.livro.findMany({
-    // usado o in ao inves do Promisse.all porque aqui é apenas uma consulta, já no promisse são varias ao mesmo tempo
-    where: { id: { in: livroIds } },
-    select: {
-      id: true,
-      titulo: true,
-      isbn: true,
-    },
-  });
-
-  // Juntar os dados dos livros com a contagem de empréstimos
-  const resultadoFinal = livrosMaisEmprestados.map((emprestimo) => {
-    // .find() é um método do Array - Ele percorre um array e retorna o primeiro elemento que satisfaz a condição passada.
-    // verifico se o livro tem o id igual ao do emprestimo para juntar os dados úteis
-    const livro = livrosDetalhados.find((l) => l.id === emprestimo.livroId);
-    return {
-      livroId: emprestimo.livroId,
-      titulo: livro ? livro.titulo : "Desconhecido",
-      isbn: formatarISBN(livro.isbn),
-      totalEmprestimos: emprestimo._count.livroId,
-    };
-  });
-
-  return resultadoFinal;
 };
 
 export const listarClientesMaisFrequentes = async () => {
