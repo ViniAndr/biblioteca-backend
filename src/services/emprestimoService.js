@@ -73,7 +73,8 @@ async function Verificacoes(clienteId, livroId) {
   // Checar se esse cliente já fez alguma solicitação anterior do mesmo livro e está em SOLICITADO ou EMPRESTADO
   if (emprestimos.duplicidade > 0) throw new AppError("Você já tem um empréstimo desse livro.", 400);
   // o Cliente só pode ter no maximo 3 emprestimo/solicitação em andamento
-  if (emprestimos.totalEmprestimos >= 3) throw new AppError("Você já tem o máximo de empréstimos andamento permitidos.", 400);
+  if (emprestimos.totalEmprestimos >= 3)
+    throw new AppError("Você já tem o máximo de empréstimos andamento permitidos.", 400);
 }
 
 // ########## FUNÇÕES DO EMPRESTIMO DE LIVRO ##########
@@ -217,7 +218,10 @@ export const confirmarRetirada = async (funcionarioId, emprestimoId) => {
 
 export const devolucao = async (emprestimoId, estadoDevolucao) => {
   // Id do emprestimo já vem valdiado pelo middleware
-  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [EMPRESTIMO_STATUS.EMPRESTADO, EMPRESTIMO_STATUS.ATRASADO]);
+  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [
+    EMPRESTIMO_STATUS.EMPRESTADO,
+    EMPRESTIMO_STATUS.ATRASADO,
+  ]);
 
   if (!estadoDevolucao || typeof estadoDevolucao !== "string") {
     throw new AppError("Informe um estado para o livro", 400);
@@ -244,7 +248,10 @@ export const devolucao = async (emprestimoId, estadoDevolucao) => {
 
 export const renovarEmprestimo = async (emprestimoId) => {
   // Id do emprestimo já vem valdiado pelo middleware
-  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [EMPRESTIMO_STATUS.EMPRESTADO, EMPRESTIMO_STATUS.ATRASADO]);
+  const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [
+    EMPRESTIMO_STATUS.EMPRESTADO,
+    EMPRESTIMO_STATUS.ATRASADO,
+  ]);
 
   // controle sobre quantas renovações poderá ser feitas.
   const maxRenovacoes = 2;
@@ -258,7 +265,10 @@ export const renovarEmprestimo = async (emprestimoId) => {
   const aberturaRenovacao = addDays(prazoDevolucao, -2);
 
   if (isBefore(hoje, aberturaRenovacao) || isAfter(hoje, prazoDevolucao)) {
-    throw new AppError(`Renovação só permitida entre ${formatarData(aberturaRenovacao)} e ${formatarData(prazoDevolucao)}`, 400);
+    throw new AppError(
+      `Renovação só permitida entre ${formatarData(aberturaRenovacao)} e ${formatarData(prazoDevolucao)}`,
+      400
+    );
   }
 
   const renovacao = await prisma.emprestimo.update({
@@ -285,7 +295,7 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, c
   // Buscar pelo titulo do livro
   if (livro) {
     where.livro = {
-      some: {
+      is: {
         titulo: {
           contains: livro,
           mode: "insensitive",
