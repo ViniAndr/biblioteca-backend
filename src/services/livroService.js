@@ -192,8 +192,13 @@ export const verTodosLivros = async (titulo, autor, editora, categoria, pagina =
     };
   }
   if (autor) where.autorId = Number(autor);
-  if (categoria) where.categoriaId = Number(categoria);
   if (editora) where.editoraId = Number(editora);
+  if (categoria)
+    where.categoria = {
+      some: {
+        id: Number(categoria),
+      },
+    };
 
   const select = {
     id: true,
