@@ -254,6 +254,7 @@ export const obterLivro = async (id) => {
     categoria: true,
     idioma: true,
     capa: true,
+    capaPequena: true,
   };
 
   const livro = await prisma.livro.findUnique({
