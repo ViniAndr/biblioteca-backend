@@ -6,6 +6,7 @@ import { validarLivro } from "../utils/validacao.js";
 import AppError from "../utils/AppError.js";
 import { limparNumeros, formatarISBN, formatarData } from "../utils/formatador.js";
 import { MENSAGENS_ERRO, EMPRESTIMO_STATUS } from "../utils/constants.js";
+import { baixarImagemECriarVersoes } from "../utils/baixarImagemECriarVersoes.js";
 
 // METODOS AUXILIAR
 // Verifica se Autor ou Editara existe e caso não, ele cria e retorna o ID.
@@ -21,8 +22,19 @@ export const cadastrado = async (dados, caminhoCapa, caminhoCapaPequena) => {
   const isbn = limparNumeros(dados.isbn);
 
   // Se o funcionário enviou uma capa, pega o caminho, se não, usa a padrão
-  const capa = caminhoCapa || "";
-  const capaPequena = caminhoCapaPequena || "";
+  let capa = caminhoCapa || "";
+  let capaPequena = caminhoCapaPequena || "";
+
+  if (caminhoCapa?.startsWith("http")) {
+    try {
+      const resultado = await baixarImagemECriarVersoes(caminhoCapa);
+      capa = resultado.capa;
+      capaPequena = resultado.capaPequena;
+    } catch (error) {
+      console.error("Erro ao baixar e processar imagem:", error);
+      throw new AppError("Não foi possível processar a imagem da capa", 500);
+    }
+  }
 
   const categoriasIds = dados.categoriaIds?.map((id) => Number(id)) || [];
 
