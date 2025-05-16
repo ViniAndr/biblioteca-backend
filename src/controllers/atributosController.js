@@ -20,6 +20,16 @@ export const obterTodos = async (req, res, next) => {
   }
 };
 
+// Serve para obter todos os atributos de autor, editora e categoria e usar em Selects
+export const obterTodosAtributos = async (req, res, next) => {
+  try {
+    const resultado = await service.obterAtributosTodos();
+    return res.json(resultado);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const editar = async (req, res, next) => {
   const id = Number(req.params.id);
   try {

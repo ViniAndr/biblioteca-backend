@@ -17,6 +17,8 @@ router.post("/:entidade", authMiddleware, controleAcesso("funcionario"), validar
 // Obter todos os atributos (Funcionario)
 router.get("/:entidade", authMiddleware, controleAcesso("funcionario"), validarEntidade, controller.obterTodos);
 
+router.get("/", controller.obterTodosAtributos);
+
 // Atualizar um atributo por ID (Funcionario)
 router.put(
   "/:entidade/:id",

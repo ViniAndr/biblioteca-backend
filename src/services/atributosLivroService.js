@@ -14,7 +14,9 @@ export const criar = async (entidade, dados) => {
   const buscarPorNome = await prisma[entidade].findUnique({ where: { nome } });
   if (buscarPorNome)
     throw new AppError(
-      `${entidade == "autor" ? "Esse" : "Essa"} ${entidade} já está ${entidade == "autor" ? "cadastrado" : "cadastrada"}`,
+      `${entidade == "autor" ? "Esse" : "Essa"} ${entidade} já está ${
+        entidade == "autor" ? "cadastrado" : "cadastrada"
+      }`,
       400
     );
 
@@ -22,7 +24,6 @@ export const criar = async (entidade, dados) => {
 };
 
 // Porque não obter um? o front vai receber todos, logo pode pegar um sem solicitar ao back
-
 export const obterTodos = async (entidade, nome, pagina = 1, itensPorPagina) => {
   const where = {};
 
@@ -56,6 +57,30 @@ export const obterTodos = async (entidade, nome, pagina = 1, itensPorPagina) => 
     qtdTotalDePaginas: contador > 0 ? Math.ceil(contador / itensPorPagina) : 1,
     paginaAtual: Number(pagina),
     total: contador,
+  };
+};
+
+// Obter todos autores, editoras e categorias de uma vez
+export const obterAtributosTodos = async () => {
+  const [autores, editoras, categorias] = await prisma.$transaction([
+    prisma.autor.findMany({
+      select: { id: true, nome: true },
+      orderBy: { nome: "asc" },
+    }),
+    prisma.editora.findMany({
+      select: { id: true, nome: true },
+      orderBy: { nome: "asc" },
+    }),
+    prisma.categoria.findMany({
+      select: { id: true, nome: true },
+      orderBy: { nome: "asc" },
+    }),
+  ]);
+
+  return {
+    autores,
+    editoras,
+    categorias,
   };
 };
 

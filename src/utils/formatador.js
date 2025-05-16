@@ -31,6 +31,15 @@ export const formatarData = (data) => {
   return format(dateObj, "dd/MM/yyyy");
 };
 
+export const formatarDataInput = (data) => {
+  if (!data) return "Data inválida"; // Evita erro se `data` for undefined
+
+  // Se `data` já for um objeto Date, não precisa chamar parseISO
+  const dateObj = data instanceof Date ? data : parseISO(data);
+
+  return format(dateObj, "yyyy-MM-dd");
+};
+
 // O status que é todo MAIÚSCULA retorna apens a primeira letra MAIÚSCULA
 export const formatarStatus = (status) => {
   return `${status.charAt()}${status.slice(1).toLocaleLowerCase()}`;
