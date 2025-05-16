@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 import { validarLivro } from "../utils/validacao.js";
 import AppError from "../utils/AppError.js";
-import { limparNumeros, formatarISBN, formatarData } from "../utils/formatador.js";
+import { limparNumeros, formatarISBN, formatarDataInput } from "../utils/formatador.js";
 import { MENSAGENS_ERRO, EMPRESTIMO_STATUS } from "../utils/constants.js";
 import { baixarImagemECriarVersoes } from "../utils/baixarImagemECriarVersoes.js";
 
@@ -47,7 +47,7 @@ export const cadastrado = async (dados, caminhoCapa, caminhoCapaPequena) => {
     autorId: Number(dados.autorId),
     editoraId: Number(dados.editoraId),
     numeroPagina: dados.numeroPagina ? Number(dados.numeroPagina) : null,
-    publicadoEm: dados.publicadoEm ? dados.publicadoEm : null,
+    publicadoEm: dados.publicadoEm ? new Date(dados.publicadoEm) : null,
     idioma: typeof dados.idioma == "string" ? dados.idioma.trim() : null,
     capa,
     capaPequena,
@@ -293,10 +293,10 @@ export const buscarLivroGoogle = async (isbn) => {
     autor: livro.authors ? livro.authors[0] : "Desconhecido",
     editora: livro.publisher || "Desconhecida",
     categorias: livro.categories || ["Literatura"],
-    publicadoEm: livro.publishedDate ? formatarData(new Date(livro.publishedDate)) : null,
+    publicadoEm: livro.publishedDate ? formatarDataInput(new Date(livro.publishedDate)) : null,
     descricao: livro.description || "",
     numeroPagina: livro.pageCount || null,
-    idioma: livro.language || "PT",
+    idioma: livro.language || "pt-BR",
     capa: livro.imageLinks?.thumbnail?.replace("&zoom=1", "") || "",
     capaPequena: livro.imageLinks?.thumbnail?.replace("&zoom=1", "&zoom=2") || "",
   };
