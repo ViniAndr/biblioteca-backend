@@ -59,8 +59,8 @@ const processarImagem = async (req, res, next) => {
 
     // Atualizar os caminhos no req.file
     req.file.filename = nomeArquivo;
-    req.file.path = `/uploads/${nomeArquivo}-grande.jpg`;
-    req.file.pequena = `/uploads/${nomeArquivo}-pequena.jpg`;
+    req.file.path = `/api/uploads/${nomeArquivo}-grande.jpg`;
+    req.file.pequena = `/api/uploads/${nomeArquivo}-pequena.jpg`;
 
     next();
   } catch (erro) {
