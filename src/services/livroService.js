@@ -180,7 +180,7 @@ export const deletar = async (id) => {
   if (emprestimoAtivo) {
     throw new AppError(
       "Não é possível excluir este livro, pois ele está emprestado ou possui uma solicitação pendente.",
-      400
+      400,
     );
   }
 
@@ -282,31 +282,51 @@ export const obterLivro = async (id) => {
 };
 
 export const buscarLivroGoogle = async (isbn) => {
-  const response = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-  // pegamos sempre o primeiro que aparecer
-  const livro = response.data.items?.[0]?.volumeInfo;
-  if (!livro) throw new AppError("Livro não encontrado na API do Google", 404);
+  try {
+    const response = await axios.get(
+      `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&key=${process.env.GOOGLE_BOOKS_API_KEY}`,
+    );
 
-  // Dados tratados
-  const dadosLivro = {
-    titulo: livro.title,
-    autor: livro.authors ? livro.authors[0] : "Desconhecido",
-    editora: livro.publisher || "Desconhecida",
-    categorias: livro.categories || ["Literatura"],
-    publicadoEm: livro.publishedDate ? formatarDataInput(new Date(livro.publishedDate)) : null,
-    descricao: livro.description || "",
-    numeroPagina: livro.pageCount || null,
-    idioma: livro.language || "pt-BR",
-    capa: livro.imageLinks?.thumbnail?.replace("&zoom=1", "") || "",
-    capaPequena: livro.imageLinks?.thumbnail?.replace("&zoom=1", "&zoom=2") || "",
-  };
+    const livroInfo = response.data.items?.[0]?.volumeInfo;
+    if (!livroInfo) throw new AppError("Livro não encontrado na API do Google", 404);
 
-  // buscar ou criar Autor
-  dadosLivro.autor = await obterAttSimplesOuCriar(livro.authors[0], "autor");
-  // buscar ou criar Autor
-  dadosLivro.editora = await obterAttSimplesOuCriar(dadosLivro.editora, "editora");
+    // Extrair os nomes de forma segura antes de usá-los
+    const nomeAutor = livroInfo.authors ? livroInfo.authors[0] : "Desconhecido";
+    const nomeEditora = livroInfo.publisher || "Desconhecida";
 
-  return dadosLivro;
+    // Montar o objeto tratado
+    const dadosLivro = {
+      titulo: livroInfo.title,
+      autor: nomeAutor, // <-- Usamos a variável segura
+      editora: nomeEditora, // <-- Usamos a variável segura
+      categorias: livroInfo.categories || ["Literatura"],
+      publicadoEm: livroInfo.publishedDate ? formatarDataInput(new Date(livroInfo.publishedDate)) : null,
+      descricao: livroInfo.description || "",
+      numeroPagina: livroInfo.pageCount || null,
+      idioma: livroInfo.language || "pt-BR",
+      capa: livroInfo.imageLinks?.thumbnail?.replace("&zoom=1", "") || "",
+      capaPequena: livroInfo.imageLinks?.thumbnail?.replace("&zoom=1", "&zoom=2") || "",
+    };
+
+    // Buscar ou criar no banco usando as variáveis seguras!
+    dadosLivro.autor = await obterAttSimplesOuCriar(nomeAutor, "autor");
+    dadosLivro.editora = await obterAttSimplesOuCriar(nomeEditora, "editora");
+
+    return dadosLivro;
+  } catch (error) {
+    // Se o erro for o bloqueio do Google (429), mandamos uma mensagem amigável para o usuário
+    if (error.response?.status === 429) {
+      throw new AppError("Limite de buscas excedido. Aguarde alguns minutos e tente novamente.", 429);
+    }
+
+    // Se for o nosso erro de "Não encontrado", repassamos ele
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    // Se for qualquer outra coisa (API fora do ar, erro de rede), evitamos o erro 500 genérico
+    throw new AppError("Erro inesperado ao buscar dados no Google Books.", 500);
+  }
 };
 
 // Lista os top 10 livros mais emprestados

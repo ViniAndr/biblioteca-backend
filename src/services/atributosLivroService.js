@@ -17,10 +17,11 @@ export const criar = async (entidade, dados) => {
       `${entidade == "autor" ? "Esse" : "Essa"} ${entidade} já está ${
         entidade == "autor" ? "cadastrado" : "cadastrada"
       }`,
-      400
+      400,
     );
 
-  await prisma[entidade].create({ data: dados });
+  const novoItem = await prisma[entidade].create({ data: dados });
+  return novoItem;
 };
 
 // Porque não obter um? o front vai receber todos, logo pode pegar um sem solicitar ao back

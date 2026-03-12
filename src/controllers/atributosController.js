@@ -2,8 +2,12 @@ import * as service from "../services/atributosLivroService.js";
 
 export const criar = async (req, res, next) => {
   try {
-    await service.criar(req.entidade, req.body);
-    return res.status(201).json({ message: `${req.entidade} criado com sucesso` });
+    const novoItem = await service.criar(req.entidade, req.body);
+
+    return res.status(201).json({
+      message: `${req.entidade} criado com sucesso`,
+      data: novoItem,
+    });
   } catch (error) {
     next(error);
   }
