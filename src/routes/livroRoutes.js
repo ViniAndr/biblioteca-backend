@@ -15,7 +15,17 @@ import { upload, processarImagem } from "../middlewares/uploadMiddleware.js";
 router.post("/", authMiddleware, controleAcesso("funcionario"), upload, processarImagem, controller.cadastrado);
 
 // Editar livro
-router.put("/:id", authMiddleware, controleAcesso("funcionario"), validarId, controller.atualizar);
+//router.put("/:id", authMiddleware, controleAcesso("funcionario"), validarId, controller.atualizar);
+// Editar livro (Agora com suporte a FormData e upload de imagens!)
+router.put(
+  "/:id",
+  authMiddleware,
+  controleAcesso("funcionario"),
+  validarId,
+  upload,
+  processarImagem,
+  controller.atualizar,
+);
 
 // Desativar livro (Exclusão lógica)
 router.patch("/:id/desativar", authMiddleware, controleAcesso("funcionario"), validarId, controller.deletar); // Rota mais semântica

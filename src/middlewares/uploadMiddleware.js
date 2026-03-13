@@ -33,9 +33,23 @@ const upload = multer({
 
 // Middleware de processamento com Sharp
 const processarImagem = async (req, res, next) => {
-  if (req.body.capa && req.body.capa.startsWith("http")) {
-    req.file = { path: req.body.capa, pequena: req.body.capaPequena }; // armazenamos as imagens no file
-    return next();
+  const capa = req.body.capa;
+
+  if (capa && typeof capa === "string") {
+    // REGRA DE OURO: Só passa se for um link da web OU o nosso caminho oficial do sistema
+    const ehLinkValido = capa.startsWith("http://") || capa.startsWith("https://");
+    const ehCaminhoLocal = capa.startsWith("/api/uploads/");
+
+    if (ehLinkValido || ehCaminhoLocal) {
+      req.file = {
+        path: capa,
+        pequena: req.body.capaPequena || capa,
+      };
+      return next();
+    } else {
+      // Se mandou "blablabla", o segurança barra aqui e devolve Erro 400 na cara!
+      return res.status(400).json({ erro: "Caminho ou URL de imagem inválido." });
+    }
   }
 
   if (!req.file) {

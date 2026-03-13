@@ -14,6 +14,13 @@ export const cadastrado = async (req, res, next) => {
 
 export const atualizar = async (req, res, next) => {
   const id = Number(req.params.id);
+
+  // Se o Multer processou uma imagem nova, injetamos os caminhos dela no body
+  if (req.file) {
+    req.body.capa = req.file.path;
+    req.body.capaPequena = req.file.pequena;
+  }
+
   try {
     await livroService.atualizar(id, req.body);
     return res.status(200).json({ mensagem: "Livro atualizado com sucesso" });

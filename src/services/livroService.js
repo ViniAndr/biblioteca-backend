@@ -89,6 +89,7 @@ export const cadastrado = async (dados, caminhoCapa, caminhoCapaPequena) => {
 
 // Atualizar cheio de validações
 export const atualizar = async (id, dados) => {
+  console.log("dados: ", dados);
   // O ID já vem validado pelo middleware
 
   // Busca o livro para garantir que ele existe e obter as categorias atuais
@@ -129,9 +130,20 @@ export const atualizar = async (id, dados) => {
           set: valorNovo.map((id) => ({ id: Number(id) })),
         };
         break;
-      // PROBLEMA - SE ALMENTAR O NUMERO DE CÓPIAS AUMENTA O DISPONIVEL?
+      // PROBLEMA - SE AUMENTAR O NUMERO DE CÓPIAS AUMENTA O DISPONIVEL?
       case "qtdCopias":
+        const novasCopias = Number(valorNovo);
+        const diferencaCopias = novasCopias - livro.qtdCopias; // Quantos livros a mais (ou a menos)
+
+        dadosNovos.qtdCopias = novasCopias;
+        // Atualiza a quantidade disponível somando a diferença (garantindo que nunca fique menor que 0)
+        dadosNovos.qtdDisponivel = Math.max(0, livro.qtdDisponivel + diferencaCopias);
+        break;
       case "qtdDisponivel":
+        // Como já calculamos acima, o frontend nem precisaria mandar isso na edição.
+        // Mas se mandar, a gente só atualiza se for um valor válido.
+        dadosNovos[campo] = Number(valorNovo);
+        break;
       case "edicao":
       case "autorId":
       case "editoraId":
@@ -140,8 +152,12 @@ export const atualizar = async (id, dados) => {
         break;
 
       case "publicadoEm":
+        dadosNovos[campo] = new Date(`${valorNovo}T00:00:00.000Z`);
+        break;
       case "idioma":
       case "capa":
+      case "capaPequena":
+      case "descricao":
         // Esses campos devem ser mantidos como string
         dadosNovos[campo] = valorNovo;
         break;
