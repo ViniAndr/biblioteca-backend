@@ -17,16 +17,16 @@ router.post("/", authMiddleware, controleAcesso("cliente", true), emprestimo.sol
 router.post("/funcionario", authMiddleware, controleAcesso("funcionario"), emprestimo.fazerEmprestimo);
 
 // Cancelar uma solicitação de empréstimo
-router.patch("/:id/cancelar", authMiddleware, controleAcesso("cliente", true), validarId, emprestimo.cancelarSolicitacao);
+router.patch("/:id/cancelar", authMiddleware, controleAcesso("cliente"), validarId, emprestimo.cancelarSolicitacao);
 
 // Confirmar retirada de um livro após solicitação do cliente
-router.patch("/:id/retirada", authMiddleware, controleAcesso("funcionario"), validarId, emprestimo.confirmarRetirada);
+router.patch("/:id/retirar", authMiddleware, controleAcesso("funcionario"), validarId, emprestimo.confirmarRetirada);
 
 // Devolver um livro
-router.patch("/:id/devolucao", authMiddleware, controleAcesso("funcionario"), validarId, emprestimo.devolucao);
+router.patch("/:id/devolver", authMiddleware, controleAcesso("funcionario"), validarId, emprestimo.devolucao);
 
 // Renovar um empréstimo
-router.patch("/:id/renovacao", authMiddleware, validarId, emprestimo.renovarEmprestimo);
+router.patch("/:id/renovar", authMiddleware, validarId, emprestimo.renovarEmprestimo);
 
 // Listar todos os empréstimos (acessado por funcionários)
 router.get("/", authMiddleware, controleAcesso("funcionario"), emprestimo.listarTodos);

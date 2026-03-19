@@ -76,30 +76,22 @@ export const obterPorId = async (req, res, next) => {
 };
 
 export const atualizarPerfil = async (req, res, next) => {
-  const clienteId = Number(req.usuarioId);
+  const clienteId = Number(req.usuarioId); // ID pego pelo Token (Segurança máxima)
   try {
-    await clienteService.atualizarDadosPessoais(clienteId, req.body);
-    return res.status(200).json({ mensagem: "Dados atualizado com sucesso" });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const atualizarEndereco = async (req, res, next) => {
-  const clienteId = Number(req.usuarioId);
-  try {
-    await clienteService.atualizarEndereco(clienteId, req.body);
-    return res.status(200).json({ mensagem: "Endereço atualizado com sucesso" });
+    // Chama a nossa nova função unificada para o próprio cliente
+    await clienteService.atualizarPerfilCliente(clienteId, req.body);
+    return res.status(200).json({ mensagem: "Perfil atualizado com sucesso" });
   } catch (error) {
     next(error);
   }
 };
 
 export const atualizaPorId = async (req, res, next) => {
-  const clienteId = Number(req.params.id);
+  const clienteId = Number(req.params.id); // ID pego pela URL
   try {
-    await clienteService.atualizaClienteComFuncionario(clienteId, req.body);
-    return res.status(200).json({ mensagem: "Dados atualizados com sucesso" });
+    // Chama a nova função unificada para o funcionário
+    await clienteService.atualizarClientePeloFuncionario(clienteId, req.body);
+    return res.status(200).json({ mensagem: "Dados do cliente atualizados com sucesso" });
   } catch (error) {
     next(error);
   }

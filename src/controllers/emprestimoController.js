@@ -27,11 +27,13 @@ export const fazerEmprestimo = async (req, res, next) => {
 
 // Cliente pode cancelar sua solicitação de empréstimo
 export const cancelarSolicitacao = async (req, res, next) => {
-  const clienteId = Number(req.usuarioId); // Obtém o ID do usuário autenticado
-  const emprestimoId = Number(req.params.id); // Obtém o ID do empréstimo da URL
-
   try {
-    await service.cancelarSolicitacao(clienteId, emprestimoId);
+    const { id } = req.params; // ID do empréstimo
+    const usuarioId = req.usuarioId; // ID de quem está logado
+    const papelUsuario = req.usuarioRole; // "cliente" ou "funcionario
+
+    await service.cancelarSolicitacao(usuarioId, papelUsuario, Number(id));
+
     return res.status(200).json({ mensagem: "Solicitação cancelada com sucesso" });
   } catch (error) {
     next(error); // Passa o erro para o middleware de tratamento de erros
@@ -77,11 +79,11 @@ export const renovarEmprestimo = async (req, res, next) => {
 
 export const listarTodos = async (req, res, next) => {
   // Parametros opcionais para FILTROS
-  const { pagina = 1, qtdItensPorPagina = 10, livro, status } = req.query;
+  const { pagina = 1, qtdItensPorPagina = 10, barraDeBusca, status } = req.query;
   const itensPorPagina = Number(qtdItensPorPagina);
 
   try {
-    const emprestimos = await service.listarEmprestimos(pagina, itensPorPagina, livro, status);
+    const emprestimos = await service.listarEmprestimos(pagina, itensPorPagina, barraDeBusca, status);
     return res.status(200).json(emprestimos);
   } catch (error) {
     next(error);

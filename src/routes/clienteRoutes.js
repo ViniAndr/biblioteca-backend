@@ -26,11 +26,8 @@ router.post("/login", clienteController.login);
 // Ver dados do perfil do cliente
 router.get("/perfil", authMiddleware, controleAcesso("cliente", true), clienteController.verPerfil);
 
-// Atualizar dados do perfil do cliente
+// Atualizar DADOS e ENDEREÇO do perfil do cliente (Tudo em uma rota só!)
 router.put("/perfil", authMiddleware, controleAcesso("cliente", true), clienteController.atualizarPerfil);
-
-// Atualizar endereço do cliente
-router.put("/perfil/endereco", authMiddleware, controleAcesso("cliente", true), clienteController.atualizarEndereco);
 
 // Atualizar dados de um cliente (feito pelo funcionário)
 router.put("/:id", authMiddleware, controleAcesso("funcionario"), validarId, clienteController.atualizaPorId);

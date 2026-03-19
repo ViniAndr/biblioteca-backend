@@ -89,9 +89,7 @@ export const cadastrado = async (dados, caminhoCapa, caminhoCapaPequena) => {
 
 // Atualizar cheio de validações
 export const atualizar = async (id, dados) => {
-  console.log("dados: ", dados);
   // O ID já vem validado pelo middleware
-
   // Busca o livro para garantir que ele existe e obter as categorias atuais
   const livro = await prisma.livro.findUnique({
     where: { id },
@@ -233,13 +231,14 @@ export const verTodosLivros = async (titulo, autor, editora, categoria, pagina =
     titulo: true,
     isbn: true,
     qtdCopias: true,
+    qtdDisponivel: true,
     autor: true,
     editora: true,
     categoria: true,
     capaPequena: true,
   };
 
-  const [livros, contador] = await prisma.$transaction([
+  const [livros, contador, agregacao] = await prisma.$transaction([
     prisma.livro.findMany({
       where,
       select,
@@ -247,7 +246,16 @@ export const verTodosLivros = async (titulo, autor, editora, categoria, pagina =
       skip: (Number(pagina) - 1) * Number(itensPorPagina),
     }),
 
+    // Conta quantos Títulos únicos existem (quantas linhas)
     prisma.livro.count({ where }),
+
+    // Soma a coluna de quantidade de todos os livros filtrados!
+    prisma.livro.aggregate({
+      where,
+      _sum: {
+        qtdCopias: true,
+      },
+    }),
   ]);
 
   const livrosFormatado = livros.map((l) => ({
@@ -260,7 +268,8 @@ export const verTodosLivros = async (titulo, autor, editora, categoria, pagina =
     livros: livrosFormatado,
     qtdTotalDePaginas: contador > 0 ? Math.ceil(contador / itensPorPagina) : 1,
     paginaAtual: Number(pagina),
-    total: contador,
+    totalTitulos: contador,
+    totalExemplares: agregacao._sum.qtdCopias || 0,
   };
 };
 

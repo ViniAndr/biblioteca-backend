@@ -17,6 +17,10 @@ export const cadastrorSimples = async (dadosCliente) => {
   const { nome, sobrenome } = dadosCliente;
   const telefone = limparNumeros(dadosCliente.telefone);
 
+  if (!dadosCliente.email || dadosCliente.email.trim() === "") {
+    delete dadosCliente.email;
+  }
+
   // Validações
   validacao.validarTelefone(telefone);
   validacao.validarNome(nome);
@@ -151,6 +155,7 @@ export const obterPerfil = async (id) => {
     select: {
       nome: true,
       telefone: true,
+      email: true,
       logradouro: true,
       numero: true,
       bairro: true,
@@ -169,48 +174,119 @@ export const obterPerfil = async (id) => {
   };
 };
 
-export const atualizarDadosPessoais = async (id, dadosNovos) => {
-  // Id já vem validado do req
-  const { nome, sobrenome, email, senhaAtual, senhaNova } = dadosNovos;
-  const telefone = limparNumeros(dadosNovos.telefone);
-
+// CLIENTE ATUALIZANDO O PRÓPRIO PERFIL
+export const atualizarPerfilCliente = async (id, dadosNovos) => {
   const cliente = await prisma.cliente.findUnique({ where: { id } });
-  if (!cliente) {
-    throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
-  }
+  if (!cliente) throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
 
   const dadosAtualizados = {};
 
-  if (nome?.trim() && sobrenome?.trim() && `${nome} ${sobrenome}`.toLowerCase() !== cliente.nome.toLowerCase()) {
-    validacao.validarNome(nome);
-    validacao.validarNome(sobrenome);
-    dadosAtualizados.nome = juntarNomes(nome, sobrenome);
-  }
-
-  if (email && email !== cliente.email) {
-    validacao.validarEmail(email);
-    await verificarDuplicidade("email", email, "cliente", prisma);
-    dadosAtualizados.email = email;
-  }
-
-  if (telefone && telefone !== cliente.telefone) {
-    validacao.validarTelefone(telefone);
-    await verificarDuplicidade("telefone", telefone, "cliente", prisma);
-    dadosAtualizados.telefone = telefone;
-  }
-
-  if (senhaAtual && senhaNova) {
-    if (senhaAtual === senhaNova) {
-      throw new AppError("A senha nova não deve ser igual a atual", 400);
+  // NOME E SOBRENOME
+  if (dadosNovos.nome && dadosNovos.sobrenome) {
+    const nomeCompleto = juntarNomes(dadosNovos.nome, dadosNovos.sobrenome);
+    if (nomeCompleto.toLowerCase() !== cliente.nome.toLowerCase()) {
+      validacao.validarNome(dadosNovos.nome);
+      validacao.validarNome(dadosNovos.sobrenome);
+      dadosAtualizados.nome = nomeCompleto;
     }
-
-    const senhaCorreta = await bcrypt.compare(senhaAtual, cliente.senha);
-    if (!senhaCorreta) {
-      throw new AppError("Senha atual incorreta", 401);
-    }
-    validacao.validarSenha(senhaNova);
-    dadosAtualizados.senha = await hashSenha(senhaNova);
   }
+
+  // EMAIL
+  if (dadosNovos.email && dadosNovos.email !== cliente.email) {
+    validacao.validarEmail(dadosNovos.email);
+    await verificarDuplicidade("email", dadosNovos.email, "cliente", prisma);
+    dadosAtualizados.email = dadosNovos.email;
+  }
+
+  // TELEFONE
+  if (dadosNovos.telefone) {
+    const telefoneLimpo = limparNumeros(dadosNovos.telefone);
+    if (telefoneLimpo !== cliente.telefone) {
+      validacao.validarTelefone(telefoneLimpo);
+      await verificarDuplicidade("telefone", telefoneLimpo, "cliente", prisma);
+      dadosAtualizados.telefone = telefoneLimpo;
+    }
+  }
+
+  // SENHA (Só altera se mandou a nova, e exige a atual!)
+  if (dadosNovos.senhaNova) {
+    if (!dadosNovos.senhaAtual) throw new AppError("Senha atual é obrigatória para alterar a senha.", 400);
+    if (dadosNovos.senhaAtual === dadosNovos.senhaNova)
+      throw new AppError("A senha nova não deve ser igual a atual.", 400);
+
+    const senhaCorreta = await bcrypt.compare(dadosNovos.senhaAtual, cliente.senha);
+    if (!senhaCorreta) throw new AppError("Senha atual incorreta.", 401);
+
+    validacao.validarSenha(dadosNovos.senhaNova);
+    dadosAtualizados.senha = await hashSenha(dadosNovos.senhaNova);
+  }
+
+  // ENDEREÇO (Verificação inteligente em bloco)
+  const camposEndereco = ["logradouro", "numero", "bairro", "cidade", "estado", "cep"];
+  camposEndereco.forEach((campo) => {
+    if (dadosNovos[campo] && dadosNovos[campo] !== cliente[campo]) {
+      dadosAtualizados[campo] = dadosNovos[campo];
+    }
+  });
+
+  if (dadosAtualizados.estado) validacao.validarEstado(dadosAtualizados.estado);
+  if (dadosAtualizados.cep) validacao.validarCEP(dadosAtualizados.cep);
+
+  // Se não mudou absolutamente nada, avisa
+  if (Object.keys(dadosAtualizados).length === 0) {
+    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
+  }
+
+  await prisma.cliente.update({
+    where: { id },
+    data: dadosAtualizados,
+  });
+};
+
+// FUNCIONÁRIO ATUALIZANDO O CLIENTE
+export const atualizarClientePeloFuncionario = async (id, dadosNovos) => {
+  const cliente = await prisma.cliente.findUnique({ where: { id } });
+  if (!cliente) throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
+
+  const dadosAtualizados = {};
+
+  // NOME E SOBRENOME
+  if (dadosNovos.nome && dadosNovos.sobrenome) {
+    const nomeCompleto = juntarNomes(dadosNovos.nome, dadosNovos.sobrenome);
+    if (nomeCompleto.toLowerCase() !== cliente.nome.toLowerCase()) {
+      validacao.validarNome(dadosNovos.nome);
+      validacao.validarNome(dadosNovos.sobrenome);
+      dadosAtualizados.nome = nomeCompleto;
+    }
+  }
+
+  // EMAIL (Permitido para ajudar o cliente que esqueceu)
+  if (dadosNovos.email && dadosNovos.email !== cliente.email) {
+    validacao.validarEmail(dadosNovos.email);
+    await verificarDuplicidade("email", dadosNovos.email, "cliente", prisma);
+    dadosAtualizados.email = dadosNovos.email;
+  }
+
+  // TELEFONE
+  if (dadosNovos.telefone) {
+    const telefoneLimpo = limparNumeros(dadosNovos.telefone);
+    if (telefoneLimpo !== cliente.telefone) {
+      validacao.validarTelefone(telefoneLimpo);
+      await verificarDuplicidade("telefone", telefoneLimpo, "cliente", prisma);
+      dadosAtualizados.telefone = telefoneLimpo;
+    }
+  }
+
+  // ENDEREÇO
+  const camposEndereco = ["logradouro", "numero", "bairro", "cidade", "estado", "cep"];
+  camposEndereco.forEach((campo) => {
+    if (dadosNovos[campo] && dadosNovos[campo] !== cliente[campo]) {
+      dadosAtualizados[campo] = dadosNovos[campo];
+    }
+  });
+
+  if (dadosAtualizados.estado) validacao.validarEstado(dadosAtualizados.estado);
+  if (dadosAtualizados.cep) validacao.validarCEP(dadosAtualizados.cep);
 
   if (Object.keys(dadosAtualizados).length === 0) {
     throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
@@ -218,91 +294,7 @@ export const atualizarDadosPessoais = async (id, dadosNovos) => {
 
   await prisma.cliente.update({
     where: { id },
-    data: { ...dadosAtualizados },
-  });
-};
-
-export const atualizarEndereco = async (id, dadosNovos) => {
-  // Id já vem validado do req
-  const { logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
-
-  const cliente = await prisma.cliente.findUnique({ where: { id } });
-  if (!cliente) {
-    throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
-  }
-
-  const novoEndereco = {};
-
-  if (logradouro && logradouro !== cliente.logradouro) novoEndereco.logradouro = logradouro;
-  if (numero && numero !== cliente.numero) novoEndereco.numero = numero;
-  if (bairro && bairro !== cliente.bairro) novoEndereco.bairro = bairro;
-  if (cidade && cidade !== cliente.cidade) novoEndereco.cidade = cidade;
-  if (estado && estado !== cliente.estado) {
-    validacao.validarEstado(estado);
-    novoEndereco.estado = estado;
-  }
-  if (cep && cep !== cliente.cep) {
-    validacao.validarCEP(cep);
-    novoEndereco.cep = cep;
-  }
-
-  if (Object.keys(novoEndereco).length === 0) {
-    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
-  }
-
-  await prisma.cliente.update({
-    where: { id },
-    data: { ...novoEndereco },
-  });
-};
-
-export const atualizaClienteComFuncionario = async (id, dadosNovos) => {
-  // Id já vem validado por middleware
-  const { nome, sobrenome, logradouro, numero, bairro, cidade, estado, cep } = dadosNovos;
-  const telefone = limparNumeros(dadosNovos.telefone);
-
-  const cliente = await prisma.cliente.findUnique({ where: { id } });
-  if (!cliente) {
-    throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
-  }
-
-  const dadosAtualizados = {};
-
-  if (nome?.trim() && sobrenome?.trim() && `${nome} ${sobrenome}`.toLowerCase() !== cliente.nome.toLowerCase()) {
-    validacao.validarNome(nome);
-    validacao.validarNome(sobrenome);
-    dadosAtualizados.nome = juntarNomes(nome, sobrenome);
-  }
-
-  if (telefone && telefone !== cliente.telefone) {
-    validacao.validarTelefone(telefone);
-    await verificarDuplicidade("telefone", telefone, "cliente", prisma);
-    dadosAtualizados.telefone = telefone;
-  }
-
-  if (logradouro && logradouro !== cliente.logradouro) dadosAtualizados.logradouro = logradouro;
-  if (numero && numero !== cliente.numero) dadosAtualizados.numero = numero;
-  if (bairro && bairro !== cliente.bairro) dadosAtualizados.bairro = bairro;
-  if (cidade && cidade !== cliente.cidade) dadosAtualizados.cidade = cidade;
-  if (estado && estado !== cliente.estado) {
-    validacao.validarEstado(estado);
-    dadosAtualizados.estado = estado;
-  }
-  if (cep && cep !== cliente.cep) {
-    validacao.validarCEP(cep);
-    dadosAtualizados.cep = cep;
-  }
-
-  if (Object.keys(dadosAtualizados).length === 0) {
-    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
-  }
-
-  await prisma.cliente.update({
-    where: { id },
-    data: {
-      ...dadosAtualizados,
-      telefone,
-    },
+    data: dadosAtualizados,
   });
 };
 

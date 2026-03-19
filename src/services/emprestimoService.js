@@ -59,22 +59,35 @@ async function buscarEmprestimoPorStatus(id, statusPermitidos = []) {
 }
 
 async function Verificacoes(clienteId, livroId) {
-  const [emprestimos] = await prisma.$queryRaw`
-  SELECT 
-    COUNT(CASE WHEN status = 'ATRASADO' THEN 1 END) AS temAtraso,
-    COUNT(CASE WHEN "livroId" = ${livroId} AND status IN ('SOLICITADO', 'EMPRESTADO') THEN 1 END) AS duplicidade,
-    COUNT(CASE WHEN status IN ('SOLICITADO', 'EMPRESTADO') THEN 1 END) AS totalEmprestimos
-  FROM "Emprestimo" 
-  WHERE "clienteId" = ${clienteId};
-  `;
+  // Dispara as 3 contagens ao mesmo tempo no banco de dados para ser super rápido
+  const [atrasos, duplicatas, totalAtivos] = await Promise.all([
+    // 1. Tem algum atrasado?
+    prisma.emprestimo.count({
+      where: { clienteId, status: EMPRESTIMO_STATUS.ATRASADO },
+    }),
 
-  // Verifica se esse cliente tem algum atraso
-  if (emprestimos.temAtraso > 0) throw new AppError("Você possui empréstimos em atraso.", 400);
-  // Checar se esse cliente já fez alguma solicitação anterior do mesmo livro e está em SOLICITADO ou EMPRESTADO
-  if (emprestimos.duplicidade > 0) throw new AppError("Você já tem um empréstimo desse livro.", 400);
-  // o Cliente só pode ter no maximo 3 emprestimo/solicitação em andamento
-  if (emprestimos.totalEmprestimos >= 3)
-    throw new AppError("Você já tem o máximo de empréstimos andamento permitidos.", 400);
+    // 2. Já pediu ESSE livro?
+    prisma.emprestimo.count({
+      where: {
+        clienteId,
+        livroId,
+        status: { in: [EMPRESTIMO_STATUS.SOLICITADO, EMPRESTIMO_STATUS.EMPRESTADO] },
+      },
+    }),
+
+    // 3. Quantos empréstimos ativos ele tem no total?
+    prisma.emprestimo.count({
+      where: {
+        clienteId,
+        status: { in: [EMPRESTIMO_STATUS.SOLICITADO, EMPRESTIMO_STATUS.EMPRESTADO] },
+      },
+    }),
+  ]);
+
+  // Aplica as regras de negócio
+  if (atrasos > 0) throw new AppError("O cliente possui empréstimos em atraso.", 400);
+  if (duplicatas > 0) throw new AppError("O cliente já tem um empréstimo desse livro em andamento.", 400);
+  if (totalAtivos >= 3) throw new AppError("O cliente já atingiu o limite máximo de 3 empréstimos em andamento.", 400);
 }
 
 // ########## FUNÇÕES DO EMPRESTIMO DE LIVRO ##########
@@ -171,11 +184,13 @@ export const fazerEmprestimo = async (funcionarioId, dados) => {
   return emprestimo;
 };
 
-// Caso o cliente desista da solicitacao pode cancelar.
-export const cancelarSolicitacao = async (clienteId, emprestimoId) => {
-  // Id do cliente já é validado(Req) e do emprestimo também pelo middlware
+// Caso o cliente desista da solicitacao pode cancelar ou o funcionario por ele.
+export const cancelarSolicitacao = async (usuarioId, papelUsuario, emprestimoId) => {
   const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [EMPRESTIMO_STATUS.SOLICITADO]);
-  if (emprestimo.clienteId !== clienteId) throw new AppError("Essa solicitação não pertence a esse cliente", 400);
+
+  if (papelUsuario === "cliente" && emprestimo.clienteId !== usuarioId) {
+    throw new AppError("Essa solicitação não pertence a esse cliente", 400);
+  }
 
   await prisma.$transaction([
     prisma.emprestimo.update({
@@ -267,7 +282,7 @@ export const renovarEmprestimo = async (emprestimoId) => {
   if (isBefore(hoje, aberturaRenovacao) || isAfter(hoje, prazoDevolucao)) {
     throw new AppError(
       `Renovação só permitida entre ${formatarData(aberturaRenovacao)} e ${formatarData(prazoDevolucao)}`,
-      400
+      400,
     );
   }
 
@@ -289,33 +304,43 @@ export const renovarEmprestimo = async (emprestimoId) => {
 };
 
 // Listar emprestimo agora está modular para mostrar todos e para mostrar apenas o de um unico cliente
-export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, clienteId) => {
+export const listarEmprestimos = async (pagina, itensPorPagina, barraDeBusca, status, clienteId) => {
   const where = {};
 
   // Buscar pelo titulo do livro
-  if (livro) {
-    where.livro = {
-      is: {
-        titulo: {
-          contains: livro,
-          mode: "insensitive",
+  if (barraDeBusca) {
+    where.OR = [
+      {
+        livro: {
+          titulo: {
+            contains: barraDeBusca,
+            mode: "insensitive",
+          },
         },
       },
-    };
+      {
+        cliente: {
+          nome: {
+            contains: barraDeBusca,
+            mode: "insensitive",
+          },
+        },
+      },
+    ];
   }
 
-  if (status) where.status = status;
-  if (clienteId) where.clienteId = clienteId;
+  if (status) where.status = status.toUpperCase();
+  if (clienteId) where.clienteId = Number(clienteId);
 
   // Configuração do `select`, removendo `cliente` se `clienteId` for `false`
   const select = {
     id: true,
     status: true,
     dataSolicitacao: true,
+    dataDevolucao: true,
     livro: {
       select: {
         titulo: true,
-        isbn: true,
       },
     },
   };
@@ -344,10 +369,10 @@ export const listarEmprestimos = async (pagina, itensPorPagina, livro, status, c
 
   // Formatar as datas
   const emprestimosFormatados = emprestimos.map((emprestimo) => {
-    emprestimo.livro.isbn = formatarISBN(emprestimo.livro.isbn);
     return {
       ...emprestimo,
       dataSolicitacao: formatarData(emprestimo.dataSolicitacao),
+      dataDevolucao: formatarData(emprestimo.dataDevolucao),
     };
   });
 
