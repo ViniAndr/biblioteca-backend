@@ -1,15 +1,10 @@
 import multer from "multer";
 import path from "path";
-import { fileURLToPath } from "url";
 import fs from "fs";
 import sharp from "sharp";
 
-// Corrigir o __dirname no ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 // Criar a pasta de uploads se não existir
-const pastaUploads = path.resolve(__dirname, "..", "uploads");
+const pastaUploads = path.resolve(process.cwd(), "uploads");
 if (!fs.existsSync(pastaUploads)) {
   fs.mkdirSync(pastaUploads, { recursive: true });
 }
@@ -73,8 +68,8 @@ const processarImagem = async (req, res, next) => {
 
     // Atualizar os caminhos no req.file
     req.file.filename = nomeArquivo;
-    req.file.path = `/api/uploads/${nomeArquivo}-grande.jpg`;
-    req.file.pequena = `/api/uploads/${nomeArquivo}-pequena.jpg`;
+    req.file.path = `/uploads/${nomeArquivo}-grande.jpg`;
+    req.file.pequena = `/uploads/${nomeArquivo}-pequena.jpg`;
 
     next();
   } catch (erro) {
