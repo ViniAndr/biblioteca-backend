@@ -52,6 +52,8 @@ export const cadastrado = async (dados, caminhoCapa, caminhoCapaPequena) => {
     capa,
     capaPequena,
     descricao: dados.descricao,
+    estante: dados.estante ? String(dados.estante).trim() : null,
+    prateleira: dados.prateleira ? String(dados.prateleira).trim() : null,
   };
 
   // validação
@@ -156,6 +158,8 @@ export const atualizar = async (id, dados) => {
       case "capa":
       case "capaPequena":
       case "descricao":
+      case "estante":
+      case "prateleira":
         // Esses campos devem ser mantidos como string
         dadosNovos[campo] = valorNovo;
         break;
@@ -236,6 +240,8 @@ export const verTodosLivros = async (titulo, autor, editora, categoria, pagina =
     editora: true,
     categoria: true,
     capaPequena: true,
+    estante: true,
+    prateleira: true,
   };
 
   const [livros, contador, agregacao] = await prisma.$transaction([
@@ -292,6 +298,8 @@ export const obterLivro = async (id) => {
     idioma: true,
     capa: true,
     capaPequena: true,
+    estante: true,
+    prateleira: true,
   };
 
   const livro = await prisma.livro.findUnique({
