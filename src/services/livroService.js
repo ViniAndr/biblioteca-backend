@@ -102,6 +102,18 @@ export const atualizar = async (id, dados) => {
     throw new AppError(MENSAGENS_ERRO.LIVRO_NAO_ENCONTRADO, 404);
   }
 
+  if (dados.capa && dados.capa.startsWith("http")) {
+    try {
+      const resultado = await baixarImagemECriarVersoes(dados.capa);
+      // Substitui o link da internet pelos caminhos locais recém-baixados
+      dados.capa = resultado.capa;
+      dados.capaPequena = resultado.capaPequena;
+    } catch (error) {
+      console.error("Erro ao baixar e processar imagem na edição:", error);
+      throw new AppError("Não foi possível processar a nova imagem da capa", 500);
+    }
+  }
+
   // Mapeia os dados recebidos e prepara apenas os que devem ser atualizados
   const dadosNovos = {};
 
