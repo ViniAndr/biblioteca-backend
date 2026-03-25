@@ -7,6 +7,7 @@ import AppError from "../utils/AppError.js";
 import { limparNumeros, formatarISBN, formatarDataInput } from "../utils/formatador.js";
 import { MENSAGENS_ERRO, EMPRESTIMO_STATUS } from "../utils/constants.js";
 import { baixarImagemECriarVersoes } from "../utils/baixarImagemECriarVersoes.js";
+import { apagarImagensAntigas } from "../utils/gerenciadorArquivos.js";
 
 // METODOS AUXILIAR
 // Verifica se Autor ou Editara existe e caso não, ele cria e retorna o ID.
@@ -191,6 +192,11 @@ export const atualizar = async (id, dados) => {
     where: { id },
     data: dadosNovos,
   });
+
+  if (dadosNovos.capa && dadosNovos.capa !== livro.capa) {
+    // rodar em "background" (sem o await) para não travar a resposta do usuário
+    apagarImagensAntigas(livro.capa, livro.capaPequena);
+  }
 };
 
 export const deletar = async (id) => {
