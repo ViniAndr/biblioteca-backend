@@ -229,8 +229,38 @@ export const deletar = async (id) => {
   });
 };
 
-export const verTodosLivros = async (titulo, autor, editora, categoria, pagina = 1, itensPorPagina) => {
-  const where = { disponivel: true };
+export const reativar = async (id) => {
+  // O id já vem validado pelo middleware
+  const livro = await prisma.livro.findUnique({ where: { id } });
+
+  if (!livro) {
+    throw new AppError("Livro não encontrado", 404);
+  }
+
+  // Se o livro já estiver ativo, não faz sentido reativar
+  if (livro.disponivel) {
+    throw new AppError("Este livro já se encontra ativo no sistema.", 400);
+  }
+
+  // Reverte a exclusão lógica
+  await prisma.livro.update({
+    where: { id },
+    data: {
+      disponivel: true,
+      deletadoEm: null, // Limpa o registo de que foi apagado
+    },
+  });
+};
+
+export const verTodosLivros = async (titulo, autor, editora, categoria, pagina = 1, itensPorPagina, status) => {
+  const where = {}; // Começa vazio
+
+  // Se o front pedir inativos, busca false. Se não pedir nada (ou pedir ativos), busca true.
+  if (status === "inativo") {
+    where.disponivel = false;
+  } else {
+    where.disponivel = true; // Padrão
+  }
 
   // Filtro de busca por título
   if (titulo) {

@@ -30,6 +30,9 @@ router.put(
 // Desativar livro (Exclusão lógica)
 router.patch("/:id/desativar", authMiddleware, controleAcesso("funcionario"), validarId, controller.deletar); // Rota mais semântica
 
+// Reativar livro (Reverter exclusão lógica)
+router.patch("/:id/reativar", authMiddleware, controleAcesso("funcionario"), validarId, controller.reativar);
+
 // Listar todos os livros (todos, até não logados)
 router.get("/", controller.listarTodos);
 

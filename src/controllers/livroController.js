@@ -39,12 +39,22 @@ export const deletar = async (req, res, next) => {
   }
 };
 
+export const reativar = async (req, res, next) => {
+  const id = Number(req.params.id);
+  try {
+    await livroService.reativar(id);
+    return res.status(200).json({ mensagem: "Livro reativado com sucesso" });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const listarTodos = async (req, res, next) => {
   // Parametros opcionais para FILTROS
-  const { titulo, autor, editora, categoria, pagina, qtdItensPorPagina = 10 } = req.query;
+  const { titulo, autor, editora, categoria, pagina, qtdItensPorPagina = 10, status } = req.query;
   const itensPorPagina = Number(qtdItensPorPagina);
   try {
-    const livros = await livroService.verTodosLivros(titulo, autor, editora, categoria, pagina, itensPorPagina);
+    const livros = await livroService.verTodosLivros(titulo, autor, editora, categoria, pagina, itensPorPagina, status);
     return res.status(200).json(livros);
   } catch (error) {
     next(error);
