@@ -81,7 +81,7 @@ export const obterPerfil = async (id) => {
 
 export const atualizarDados = async (id, dados) => {
   // Id já vem validado pelo req
-  const { nome, sobrenome, email, senhaAtual, senhaNova } = dados;
+  const { nome, email, senhaAtual, senhaNova } = dados;
 
   const dadosNovos = {};
 
@@ -90,16 +90,15 @@ export const atualizarDados = async (id, dados) => {
     throw new AppError("Usuário não localizado.", 404);
   }
 
-  if (nome?.trim() && sobrenome?.trim() && `${nome} ${sobrenome}`.toLowerCase() !== cliente.nome.toLowerCase()) {
+  if (nome && nome.trim() && nome.trim().toLowerCase() !== funcionario.nome.toLowerCase()) {
     validarNome(nome);
-    validarNome(sobrenome);
-    dadosNovos.nome = juntarNomes(nome, sobrenome);
+    dadosNovos.nome = nome.trim();
   }
 
-  if (email && email !== funcionario.email) {
+  if (email && email.trim() !== funcionario.email) {
     validarEmail(email);
     await verificarDuplicidade("email", email, "funcionario", prisma);
-    dadosNovos.email = email;
+    dadosNovos.email = email.trim();
   }
 
   if (senhaAtual && senhaNova) {
@@ -115,13 +114,14 @@ export const atualizarDados = async (id, dados) => {
     dadosNovos.senha = await hashSenha(senhaNova);
   }
 
+  // Se o usuário clicou em salvar sem mudar nada
   if (Object.keys(dadosNovos).length === 0) {
-    throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
+    throw new AppError("Nenhum dado válido fornecido para atualização.", 400);
   }
 
   return await prisma.funcionario.update({
     where: { id },
-    data: { ...dadosNovos },
+    data: dadosNovos,
     select: {
       nome: true,
       email: true,
