@@ -12,8 +12,6 @@ export const criar = async (entidade, dados) => {
 
   if (entidade === "autor") {
     validarNome(nome);
-  } else {
-    validarNomeComercial(nome);
   }
 
   const buscarPorNome = await prisma[entidade].findUnique({ where: { nome } });
@@ -100,9 +98,8 @@ export const editar = async (entidade, id, dados) => {
   if (dados.nome.trim() && buscar.nome !== dados.nome) {
     if (entidade === "autor") {
       validarNome(dados.nome);
-    } else {
-      validarNomeComercial(dados.nome);
     }
+    dadosNovos.nome = dados.nome;
   }
 
   if (Object.keys(dadosNovos).length === 0) {
