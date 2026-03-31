@@ -2,14 +2,19 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // utils
-import { validarNome } from "../utils/validacao.js";
+import { validarNome, validarNomeComercial } from "../utils/validacao.js";
 import AppError from "../utils/AppError.js";
 import { MENSAGENS_ERRO } from "../utils/constants.js";
 
 // Criar - autro, categoria ou editora
 export const criar = async (entidade, dados) => {
   const { nome } = dados;
-  validarNome(nome);
+
+  if (entidade === "autor") {
+    validarNome(nome);
+  } else {
+    validarNomeComercial(nome);
+  }
 
   const buscarPorNome = await prisma[entidade].findUnique({ where: { nome } });
   if (buscarPorNome)
@@ -93,7 +98,11 @@ export const editar = async (entidade, id, dados) => {
   const dadosNovos = {};
 
   if (dados.nome.trim() && buscar.nome !== dados.nome) {
-    dadosNovos.nome = dados.nome;
+    if (entidade === "autor") {
+      validarNome(dados.nome);
+    } else {
+      validarNomeComercial(dados.nome);
+    }
   }
 
   if (Object.keys(dadosNovos).length === 0) {

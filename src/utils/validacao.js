@@ -13,6 +13,21 @@ export const validarNome = (nome) => {
   }
 };
 
+// Valida o nome de entidades como Editoras e Categorias (Aceita números e hífens)
+export const validarNomeComercial = (nome) => {
+  if (!nome || typeof nome !== "string") {
+    throw new AppError("Nome inválido.", 400);
+  }
+
+  const nomeMinusculo = nome.toLowerCase().trim();
+  // Regex aceita letras, acentos, números, pontos, espaços e hífens
+  const regexNome = /^[a-zà-ú0-9.\-\s]{3,40}$/i; 
+  
+  if (!regexNome.test(nomeMinusculo)) {
+    throw new AppError("O nome deve ter entre 3 e 40 caracteres, contendo letras ou números.", 400);
+  }
+};
+
 // Validar o email
 export const validarEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
