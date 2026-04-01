@@ -337,7 +337,7 @@ export const listarEmprestimos = async (pagina, itensPorPagina, barraDeBusca, st
     id: true,
     status: true,
     dataSolicitacao: true,
-    dataDevolucao: true,
+    prazoDevolucao: true,
     livro: {
       select: {
         titulo: true,
@@ -372,7 +372,7 @@ export const listarEmprestimos = async (pagina, itensPorPagina, barraDeBusca, st
     return {
       ...emprestimo,
       dataSolicitacao: formatarData(emprestimo.dataSolicitacao),
-      dataDevolucao: formatarData(emprestimo.dataDevolucao),
+      prazoDevolucao: formatarData(emprestimo.prazoDevolucao),
     };
   });
 
