@@ -8,14 +8,22 @@ import { autenticarUsuario } from "./UsuariosService.js";
 import AppError from "../utils/AppError.js";
 import gerarToken from "../utils/gerarToken.js";
 import verificarDuplicidade from "../utils/verificarDuplicidade.js";
-import { limparNumeros, juntarNomes, formatarTelefoneBR } from "../utils/formatador.js";
+import { limparNumeros, juntarNomes, formatarTelefoneBR, formatarNomeProprio } from "../utils/formatador.js";
 import * as validacao from "../utils/validacao.js";
 import { MENSAGENS_ERRO } from "../utils/constants.js";
 
 // Cadastro simples (presencial) feito pelo funcionario
-export const cadastrorSimples = async (dadosCliente) => {
-  const { nome, sobrenome } = dadosCliente;
+export const cadastroSimples = async (dadosCliente) => {
+  // Tratamento e Padronização de Dados
+  const nome = formatarNomeProprio(dadosCliente.nome);
+  const sobrenome = formatarNomeProprio(dadosCliente.sobrenome);
   const telefone = limparNumeros(dadosCliente.telefone);
+
+  // Padronização de Endereço
+  dadosCliente.numero = dadosCliente.numero?.trim() ? dadosCliente.numero : "S/N";
+  if (dadosCliente.logradouro) dadosCliente.logradouro = formatarNomeProprio(dadosCliente.logradouro);
+  if (dadosCliente.bairro) dadosCliente.bairro = formatarNomeProprio(dadosCliente.bairro);
+  if (dadosCliente.cidade) dadosCliente.cidade = formatarNomeProprio(dadosCliente.cidade);
 
   if (!dadosCliente.email || dadosCliente.email.trim() === "") {
     delete dadosCliente.email;
@@ -26,6 +34,7 @@ export const cadastrorSimples = async (dadosCliente) => {
   validacao.validarNome(nome);
   validacao.validarNome(sobrenome);
   validacao.validarEndereco(dadosCliente);
+
   const nomeCompleto = juntarNomes(nome, sobrenome);
   delete dadosCliente.sobrenome;
 
@@ -59,8 +68,18 @@ export const cadastrorSimples = async (dadosCliente) => {
 
 // Cadastro completo (online)
 export const cadastroCompleto = async (dadosCliente) => {
-  const { email, senha, nome, sobrenome } = dadosCliente;
+  // 1. Tratamento e Padronização de Dados
+  const email = dadosCliente.email;
+  const senha = dadosCliente.senha;
+  const nome = formatarNomeProprio(dadosCliente.nome);
+  const sobrenome = formatarNomeProprio(dadosCliente.sobrenome);
   const telefone = limparNumeros(dadosCliente.telefone);
+
+  // Padronização de Endereço
+  dadosCliente.numero = dadosCliente.numero?.trim() ? dadosCliente.numero : "S/N";
+  if (dadosCliente.logradouro) dadosCliente.logradouro = formatarNomeProprio(dadosCliente.logradouro);
+  if (dadosCliente.bairro) dadosCliente.bairro = formatarNomeProprio(dadosCliente.bairro);
+  if (dadosCliente.cidade) dadosCliente.cidade = formatarNomeProprio(dadosCliente.cidade);
 
   // Validações
   validacao.validarNome(nome);
@@ -69,6 +88,7 @@ export const cadastroCompleto = async (dadosCliente) => {
   validacao.validarEmail(email);
   validacao.validarSenha(senha);
   validacao.validarEndereco(dadosCliente);
+
   const nomeCompleto = juntarNomes(nome, sobrenome);
   delete dadosCliente.sobrenome;
 
@@ -97,11 +117,9 @@ export const cadastroCompleto = async (dadosCliente) => {
   return token;
 };
 
-// login
 export const login = async (dadosLogin) => {
   const { email, senha } = dadosLogin;
 
-  // Validações
   validacao.validarEmail(email);
   validacao.validarSenha(senha);
 
@@ -114,17 +132,14 @@ export const login = async (dadosLogin) => {
   return token;
 };
 
-// metodo para verificar se o cliente já tem conta presencial e transforma em online
 export const migrarContaPresencialParaOnline = async (dados) => {
   const { email, senha } = dados;
   const telefone = limparNumeros(dados.telefone);
 
-  // Validações
   validacao.validarTelefone(telefone);
   validacao.validarEmail(email);
   validacao.validarSenha(senha);
 
-  // Verifica se o cliente já possui cadastro presencial
   const cliente = await prisma.cliente.findUnique({ where: { telefone } });
   if (!cliente) {
     throw new AppError("Cadastro não localizado. Verifique os dados fornecidos.", 404);
@@ -134,22 +149,17 @@ export const migrarContaPresencialParaOnline = async (dados) => {
     throw new AppError("Esse usuário já possui cadastro para uso online.", 400);
   }
 
-  // Verifica se o email já está em uso por outro cliente
   await verificarDuplicidade("email", email, "cliente", prisma);
 
-  // Criptografa a senha antes de salvar
   const senhaHash = await hashSenha(senha);
 
-  // Atualiza o cliente com os dados online
   await prisma.cliente.update({
     where: { telefone },
     data: { email, senha: senhaHash },
   });
 };
 
-// Consultar os dados do cliente, metodo usado tanto pelo cliente e pelo funcionario
 export const obterPerfil = async (id) => {
-  // Id já vem validado do req(cliente) e por middleware(funcionario)
   const cliente = await prisma.cliente.findUnique({
     where: { id },
     select: {
@@ -164,6 +174,7 @@ export const obterPerfil = async (id) => {
       cep: true,
     },
   });
+
   if (!cliente) {
     throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
   }
@@ -174,25 +185,25 @@ export const obterPerfil = async (id) => {
   };
 };
 
-// CLIENTE ATUALIZANDO O PRÓPRIO PERFIL
-export const atualizarPerfilCliente = async (id, dadosNovos) => {
-  const cliente = await prisma.cliente.findUnique({ where: { id } });
-  if (!cliente) throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
-
+// FUNÇÃO AUXILIAR PARA ATUALIZAÇÃO (Evita código duplicado)
+const prepararDadosAtualizacao = async (clienteAtual, dadosNovos) => {
   const dadosAtualizados = {};
 
   // NOME E SOBRENOME
   if (dadosNovos.nome && dadosNovos.sobrenome) {
-    const nomeCompleto = juntarNomes(dadosNovos.nome, dadosNovos.sobrenome);
-    if (nomeCompleto.toLowerCase() !== cliente.nome.toLowerCase()) {
-      validacao.validarNome(dadosNovos.nome);
-      validacao.validarNome(dadosNovos.sobrenome);
+    const nome = formatarNomeProprio(dadosNovos.nome);
+    const sobrenome = formatarNomeProprio(dadosNovos.sobrenome);
+    const nomeCompleto = juntarNomes(nome, sobrenome);
+
+    if (nomeCompleto.toLowerCase() !== clienteAtual.nome.toLowerCase()) {
+      validacao.validarNome(nome);
+      validacao.validarNome(sobrenome);
       dadosAtualizados.nome = nomeCompleto;
     }
   }
 
   // EMAIL
-  if (dadosNovos.email && dadosNovos.email !== cliente.email) {
+  if (dadosNovos.email && dadosNovos.email !== clienteAtual.email) {
     validacao.validarEmail(dadosNovos.email);
     await verificarDuplicidade("email", dadosNovos.email, "cliente", prisma);
     dadosAtualizados.email = dadosNovos.email;
@@ -201,14 +212,45 @@ export const atualizarPerfilCliente = async (id, dadosNovos) => {
   // TELEFONE
   if (dadosNovos.telefone) {
     const telefoneLimpo = limparNumeros(dadosNovos.telefone);
-    if (telefoneLimpo !== cliente.telefone) {
+    if (telefoneLimpo !== clienteAtual.telefone) {
       validacao.validarTelefone(telefoneLimpo);
       await verificarDuplicidade("telefone", telefoneLimpo, "cliente", prisma);
       dadosAtualizados.telefone = telefoneLimpo;
     }
   }
 
-  // SENHA (Só altera se mandou a nova, e exige a atual!)
+  // ENDEREÇO (Com formatação em bloco)
+  if (dadosNovos.numero !== undefined) {
+    dadosNovos.numero = dadosNovos.numero.trim() ? dadosNovos.numero : "S/N";
+  }
+
+  const camposEndereco = ["logradouro", "numero", "bairro", "cidade", "estado", "cep"];
+  camposEndereco.forEach((campo) => {
+    if (dadosNovos[campo] && dadosNovos[campo] !== clienteAtual[campo]) {
+      // Aplica Title Case apenas em campos de texto extenso
+      if (["logradouro", "bairro", "cidade"].includes(campo)) {
+        dadosAtualizados[campo] = formatarNomeProprio(dadosNovos[campo]);
+      } else {
+        dadosAtualizados[campo] = dadosNovos[campo];
+      }
+    }
+  });
+
+  if (dadosAtualizados.estado) validacao.validarEstado(dadosAtualizados.estado);
+  if (dadosAtualizados.cep) validacao.validarCEP(dadosAtualizados.cep);
+
+  return dadosAtualizados;
+};
+
+// CLIENTE ATUALIZANDO O PRÓPRIO PERFIL
+export const atualizarPerfilCliente = async (id, dadosNovos) => {
+  const cliente = await prisma.cliente.findUnique({ where: { id } });
+  if (!cliente) throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
+
+  // Usa a função auxiliar para processar os dados básicos
+  const dadosAtualizados = await prepararDadosAtualizacao(cliente, dadosNovos);
+
+  // SENHA (Regra exclusiva do cliente: Só altera se mandou a nova, e exige a atual!)
   if (dadosNovos.senhaNova) {
     if (!dadosNovos.senhaAtual) throw new AppError("Senha atual é obrigatória para alterar a senha.", 400);
     if (dadosNovos.senhaAtual === dadosNovos.senhaNova)
@@ -221,18 +263,6 @@ export const atualizarPerfilCliente = async (id, dadosNovos) => {
     dadosAtualizados.senha = await hashSenha(dadosNovos.senhaNova);
   }
 
-  // ENDEREÇO (Verificação inteligente em bloco)
-  const camposEndereco = ["logradouro", "numero", "bairro", "cidade", "estado", "cep"];
-  camposEndereco.forEach((campo) => {
-    if (dadosNovos[campo] && dadosNovos[campo] !== cliente[campo]) {
-      dadosAtualizados[campo] = dadosNovos[campo];
-    }
-  });
-
-  if (dadosAtualizados.estado) validacao.validarEstado(dadosAtualizados.estado);
-  if (dadosAtualizados.cep) validacao.validarCEP(dadosAtualizados.cep);
-
-  // Se não mudou absolutamente nada, avisa
   if (Object.keys(dadosAtualizados).length === 0) {
     throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
   }
@@ -248,45 +278,8 @@ export const atualizarClientePeloFuncionario = async (id, dadosNovos) => {
   const cliente = await prisma.cliente.findUnique({ where: { id } });
   if (!cliente) throw new AppError(MENSAGENS_ERRO.CLIENTE_NAO_ENCONTRADO, 404);
 
-  const dadosAtualizados = {};
-
-  // NOME E SOBRENOME
-  if (dadosNovos.nome && dadosNovos.sobrenome) {
-    const nomeCompleto = juntarNomes(dadosNovos.nome, dadosNovos.sobrenome);
-    if (nomeCompleto.toLowerCase() !== cliente.nome.toLowerCase()) {
-      validacao.validarNome(dadosNovos.nome);
-      validacao.validarNome(dadosNovos.sobrenome);
-      dadosAtualizados.nome = nomeCompleto;
-    }
-  }
-
-  // EMAIL (Permitido para ajudar o cliente que esqueceu)
-  if (dadosNovos.email && dadosNovos.email !== cliente.email) {
-    validacao.validarEmail(dadosNovos.email);
-    await verificarDuplicidade("email", dadosNovos.email, "cliente", prisma);
-    dadosAtualizados.email = dadosNovos.email;
-  }
-
-  // TELEFONE
-  if (dadosNovos.telefone) {
-    const telefoneLimpo = limparNumeros(dadosNovos.telefone);
-    if (telefoneLimpo !== cliente.telefone) {
-      validacao.validarTelefone(telefoneLimpo);
-      await verificarDuplicidade("telefone", telefoneLimpo, "cliente", prisma);
-      dadosAtualizados.telefone = telefoneLimpo;
-    }
-  }
-
-  // ENDEREÇO
-  const camposEndereco = ["logradouro", "numero", "bairro", "cidade", "estado", "cep"];
-  camposEndereco.forEach((campo) => {
-    if (dadosNovos[campo] && dadosNovos[campo] !== cliente[campo]) {
-      dadosAtualizados[campo] = dadosNovos[campo];
-    }
-  });
-
-  if (dadosAtualizados.estado) validacao.validarEstado(dadosAtualizados.estado);
-  if (dadosAtualizados.cep) validacao.validarCEP(dadosAtualizados.cep);
+  // Usa a função auxiliar (Funcionário não atualiza senha por aqui, então é só isso)
+  const dadosAtualizados = await prepararDadosAtualizacao(cliente, dadosNovos);
 
   if (Object.keys(dadosAtualizados).length === 0) {
     throw new AppError(MENSAGENS_ERRO.NENHUM_DADO_VALIDO, 400);
@@ -298,13 +291,14 @@ export const atualizarClientePeloFuncionario = async (id, dadosNovos) => {
   });
 };
 
+// Ver Todos (Mantido inalterado)
 export const verTodosClientes = async (pagina = 1, nome, itensPorPagina) => {
   const where = {};
 
   if (nome) {
     where.nome = {
-      contains: nome, // Busca livros cujo nome contém o termo
-      mode: "insensitive", // Ignora maiúsculas/minúsculas na busca
+      contains: nome,
+      mode: "insensitive",
     };
   }
 
@@ -318,17 +312,12 @@ export const verTodosClientes = async (pagina = 1, nome, itensPorPagina) => {
         cidade: true,
         estado: true,
       },
-      // take = pega tal quantidade de itens do BD
       take: Number(itensPorPagina),
-      // skip = serve para "pular" itens já trazidos em páginas anteriores
       skip: (Number(pagina) - 1) * Number(itensPorPagina),
     }),
-
-    // Diz o total de itens encontrados
     prisma.cliente.count({ where }),
   ]);
 
-  // Aplicando a formatação no telefone de cada cliente
   const clientesFormatados = clientes.map((cliente) => ({
     ...cliente,
     telefone: formatarTelefoneBR(cliente.telefone),

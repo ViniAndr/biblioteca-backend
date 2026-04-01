@@ -16,7 +16,7 @@ export const criarContaOnline = async (req, res, next) => {
 
 export const criarContaPresencial = async (req, res, next) => {
   try {
-    const novoCliente = await clienteService.cadastrorSimples(req.body);
+    const novoCliente = await clienteService.cadastroSimples(req.body);
 
     // Retorna a resposta de sucesso
     return res.status(201).json({
