@@ -103,9 +103,9 @@ export const editar = async (entidade, id, dados) => {
 
     if (buscar.nome !== nomeFormatado) {
       if (entidade === "autor") {
-        validarNome(dados.nome);
+        validarNome(nomeFormatado);
       }
-      dadosNovos.nome = dados.nome;
+      dadosNovos.nome = nomeFormatado;
     }
   }
 
