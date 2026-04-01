@@ -1,8 +1,15 @@
 import * as livroService from "../services/livroService.js";
 
 export const cadastrado = async (req, res, next) => {
+  // Se o Multer processou uma imagem nova (arquivo do PC), injetamos os caminhos dela no body
+  if (req.file) {
+    req.body.capa = req.file.path;
+    req.body.capaPequena = req.file.pequena;
+  }
+
   try {
-    await livroService.cadastrado(req.body, req.file?.path, req.file?.pequena);
+    // Agora passamos apenas o req.body. O Service vai se virar com o que estiver lá.
+    await livroService.cadastrado(req.body);
 
     return res.status(200).json({
       mensagem: "Livro cadastrado com sucesso",

@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 import { validarLivro } from "../utils/validacao.js";
 import AppError from "../utils/AppError.js";
-import { limparNumeros, formatarISBN, formatarDataInput } from "../utils/formatador.js";
+import { limparNumeros, formatarISBN, formatarDataInput, formatarNomeProprio } from "../utils/formatador.js";
 import { MENSAGENS_ERRO, EMPRESTIMO_STATUS } from "../utils/constants.js";
 import { baixarImagemECriarVersoes } from "../utils/baixarImagemECriarVersoes.js";
 import { apagarImagensAntigas } from "../utils/gerenciadorArquivos.js";
@@ -19,16 +19,18 @@ const obterAttSimplesOuCriar = async (nome, tabela) => {
   return atributo;
 };
 
-export const cadastrado = async (dados, caminhoCapa, caminhoCapaPequena) => {
+// Agora recebe apenas 'dados'
+export const cadastrado = async (dados) => {
   const isbn = limparNumeros(dados.isbn);
 
-  // Se o funcionário enviou uma capa, pega o caminho, se não, usa a padrão
-  let capa = caminhoCapa || "";
-  let capaPequena = caminhoCapaPequena || "";
+  // Pega a capa diretamente do body. Pode ser um link do front ou o caminho local injetado pelo controller
+  let capa = dados.capa || "";
+  let capaPequena = dados.capaPequena || "";
 
-  if (caminhoCapa?.startsWith("http")) {
+  // Verifica explicitamente se é um link externo para fazer o download
+  if (capa.startsWith("http://") || capa.startsWith("https://")) {
     try {
-      const resultado = await baixarImagemECriarVersoes(caminhoCapa);
+      const resultado = await baixarImagemECriarVersoes(capa);
       capa = resultado.capa;
       capaPequena = resultado.capaPequena;
     } catch (error) {
@@ -40,7 +42,7 @@ export const cadastrado = async (dados, caminhoCapa, caminhoCapaPequena) => {
   const categoriasIds = dados.categoriaIds?.map((id) => Number(id)) || [];
 
   const dadosProntos = {
-    titulo: dados.titulo,
+    titulo: formatarNomeProprio(dados.titulo),
     isbn,
     qtdCopias: Number(dados.qtdCopias),
     qtdDisponivel: Number(dados.qtdCopias),
@@ -141,7 +143,7 @@ export const atualizar = async (id, dados) => {
     // Tratamento específico para cada campo
     switch (campo) {
       case "titulo":
-        dadosNovos[campo] = valorNovo.trim();
+        dadosNovos[campo] = formatarNomeProprio(valorNovo);
         break;
 
       case "isbn":

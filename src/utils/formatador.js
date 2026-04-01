@@ -49,3 +49,24 @@ export const formatarISBN = (isbn) => {
   // Aplica a formatação no padrão 978-XX-XXX-XXXX-X
   return `${isbn.slice(0, 3)}-${isbn.slice(3, 5)}-${isbn.slice(5, 8)}-${isbn.slice(8, 12)}-${isbn.slice(12)}`;
 };
+
+// Capitaliza a primeira letra de cada palavra, ignorando preposições no meio do texto
+export const formatarNomeProprio = (texto) => {
+  if (!texto) return "";
+
+  const preposicoes = ["de", "da", "do", "das", "dos", "e", "em", "na", "no", "nas", "nos", "a", "o", "as", "os"];
+
+  return texto
+    .toLowerCase() // Transforma tudo em minúsculo primeiro
+    .trim() // Remove espaços nas pontas
+    .split(/\s+/) // Divide as palavras por espaço (lidando com múltiplos espaços sem querer)
+    .map((palavra, index) => {
+      // Se for uma preposição e não for a primeira palavra, deixa minúscula
+      if (index !== 0 && preposicoes.includes(palavra)) {
+        return palavra;
+      }
+      // Caso contrário, capitaliza a primeira letra da palavra
+      return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+    })
+    .join(" "); // Junta tudo de volta com 1 espaço
+};

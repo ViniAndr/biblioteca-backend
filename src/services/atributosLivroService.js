@@ -5,16 +5,18 @@ const prisma = new PrismaClient();
 import { validarNome, validarNomeComercial } from "../utils/validacao.js";
 import AppError from "../utils/AppError.js";
 import { MENSAGENS_ERRO } from "../utils/constants.js";
+import { formatarNomeProprio } from "../utils/formatador.js";
 
 // Criar - autro, categoria ou editora
 export const criar = async (entidade, dados) => {
-  const { nome } = dados;
+  const nomeFormatado = formatarNomeProprio(dados.nome);
+  dados.nome = nomeFormatado;
 
   if (entidade === "autor") {
-    validarNome(nome);
+    validarNome(nomeFormatado);
   }
 
-  const buscarPorNome = await prisma[entidade].findUnique({ where: { nome } });
+  const buscarPorNome = await prisma[entidade].findUnique({ where: { nome: nomeFormatado } });
   if (buscarPorNome)
     throw new AppError(
       `${entidade == "autor" ? "Esse" : "Essa"} ${entidade} já está ${
@@ -95,11 +97,16 @@ export const editar = async (entidade, id, dados) => {
 
   const dadosNovos = {};
 
-  if (dados.nome.trim() && buscar.nome !== dados.nome) {
-    if (entidade === "autor") {
-      validarNome(dados.nome);
+  if (dados.nome && dados.nome.trim()) {
+    // Formata o que veio do usuário
+    const nomeFormatado = formatarNomeProprio(dados.nome);
+
+    if (buscar.nome !== nomeFormatado) {
+      if (entidade === "autor") {
+        validarNome(dados.nome);
+      }
+      dadosNovos.nome = dados.nome;
     }
-    dadosNovos.nome = dados.nome;
   }
 
   if (Object.keys(dadosNovos).length === 0) {
