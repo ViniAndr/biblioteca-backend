@@ -46,8 +46,22 @@ export const formatarStatus = (status) => {
 };
 
 export const formatarISBN = (isbn) => {
-  // Aplica a formatação no padrão 978-XX-XXX-XXXX-X
-  return `${isbn.slice(0, 3)}-${isbn.slice(3, 5)}-${isbn.slice(5, 8)}-${isbn.slice(8, 12)}-${isbn.slice(12)}`;
+  if (!isbn) return "";
+
+  // Limpa tudo que não for número ou a letra X (caso venha sujo do banco)
+  const limpo = isbn.toString().replace(/[^0-9xX]/gi, "");
+
+  // Se for o padrão antigo (10 caracteres) -> Ex: 85-359-0277-5
+  if (limpo.length === 10) {
+    return `${limpo.slice(0, 2)}-${limpo.slice(2, 5)}-${limpo.slice(5, 9)}-${limpo.slice(9)}`.toUpperCase();
+  }
+  // Se for o padrão novo (13 caracteres) -> Ex: 978-85-359-0277-8
+  else if (limpo.length === 13) {
+    return `${limpo.slice(0, 3)}-${limpo.slice(3, 5)}-${limpo.slice(5, 8)}-${limpo.slice(8, 12)}-${limpo.slice(12)}`;
+  }
+
+  // Se for algum tamanho bizarro, devolve sem formatar para não quebrar a tela
+  return isbn.toUpperCase();
 };
 
 // Capitaliza a primeira letra de cada palavra, ignorando preposições no meio do texto

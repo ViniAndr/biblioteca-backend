@@ -21,8 +21,8 @@ export const validarNomeComercial = (nome) => {
 
   const nomeMinusculo = nome.toLowerCase().trim();
   // Regex aceita letras, acentos, números, pontos, espaços e hífens
-  const regexNome = /^[a-zà-ú0-9.\-\s]{3,40}$/i; 
-  
+  const regexNome = /^[a-zà-ú0-9.\-\s]{3,40}$/i;
+
   if (!regexNome.test(nomeMinusculo)) {
     throw new AppError("O nome deve ter entre 3 e 40 caracteres, contendo letras ou números.", 400);
   }
@@ -91,8 +91,8 @@ export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, a
     throw new AppError("O título do livro é obrigatório e deve ter pelo menos 3 caracteres.", 400);
   }
 
-  if (!isbn || !/^\d{13}$/.test(isbn)) {
-    throw new AppError("O ISBN deve conter exatamente 13 dígitos numéricos.", 400);
+  if (!isbn || !/^(\d{13}|\d{9}[xX\d])$/.test(isbn)) {
+    throw new AppError("O ISBN deve conter 13 dígitos numéricos ou 10 caracteres válidos (livros antigos).", 400);
   }
 
   if (!Number.isInteger(qtdCopias) || qtdCopias < 1) {
@@ -102,7 +102,7 @@ export const validarLivro = ({ titulo, isbn, qtdCopias, qtdDisponivel, edicao, a
   if (!Number.isInteger(qtdDisponivel) || qtdDisponivel < 0 || qtdDisponivel > qtdCopias) {
     throw new AppError(
       "A quantidade disponível deve ser um número inteiro entre 0 e a quantidade total de cópias.",
-      400
+      400,
     );
   }
 
