@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import sharp from "sharp";
 import axios from "axios";
 
@@ -16,7 +15,13 @@ export async function baixarImagemECriarVersoes(urlImagem) {
   const caminhoGrande = path.join(pastaUploads, `${nomeArquivo}-grande.jpg`);
   const caminhoPequena = path.join(pastaUploads, `${nomeArquivo}-pequena.jpg`);
 
-  const resposta = await axios.get(urlImagem, { responseType: "arraybuffer" });
+  const resposta = await axios.get(urlImagem, {
+    responseType: "arraybuffer",
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    },
+  });
   const buffer = Buffer.from(resposta.data, "binary");
 
   await sharp(buffer).resize({ width: 575 }).jpeg({ quality: 70 }).toFile(caminhoGrande);

@@ -103,26 +103,25 @@ export const atualizar = async (id, dados) => {
     throw new AppError(MENSAGENS_ERRO.LIVRO_NAO_ENCONTRADO, 404);
   }
 
-  if (dados.capa && typeof dados.capa === "string" && dados.capa.startsWith("http")) {
-    // Verifica se a URL já é do nosso próprio servidor
-    if (dados.capa.includes("/uploads/")) {
-      try {
-        // Extrai apenas o caminho (ex: "/uploads/1774973...jpg")
-        // Assim, o "valorNovo === valorAtual" lá no loop vai bater certinho e ignorar!
+  if (dados.capa && typeof dados.capa === "string") {
+    // Se for um link HTTP (Pode ser Amazon ou localhost)...
+    if (dados.capa.startsWith("http://") || dados.capa.startsWith("https://")) {
+      // Cenário A: É a imagem do nosso próprio servidor voltando no modal de edição!
+      if (dados.capa.includes("/uploads/")) {
+        // Pega http://localhost:3000/uploads/foto.jpg e transforma em /uploads/foto.jpg
         const urlObj = new URL(dados.capa);
         dados.capa = urlObj.pathname;
-      } catch (err) {
-        throw new AppError("URL de imagem interna inválida.", 400);
       }
-    } else {
-      // É uma imagem externa de verdade (ex: API do Google Books). Vamos baixar!
-      try {
-        const resultado = await baixarImagemECriarVersoes(dados.capa);
-        dados.capa = resultado.capa;
-        dados.capaPequena = resultado.capaPequena;
-      } catch (error) {
-        console.error("Erro ao baixar e processar imagem na edição:", error);
-        throw new AppError("Não foi possível processar a nova imagem da capa", 500);
+      // Cenário B: É uma imagem externa da Amazon ou Google
+      else {
+        try {
+          const resultado = await baixarImagemECriarVersoes(dados.capa);
+          dados.capa = resultado.capa;
+          dados.capaPequena = resultado.capaPequena;
+        } catch (error) {
+          console.error("Erro ao baixar imagem externa na edição:", error);
+          throw new AppError("Não foi possível baixar a imagem da internet.", 500);
+        }
       }
     }
   }

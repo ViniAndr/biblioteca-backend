@@ -18,9 +18,9 @@ const upload = multer({
     fileSize: 2 * 1024 * 1024, // 2MB máximo
   },
   fileFilter: (req, file, cb) => {
-    const tiposPermitidos = ["image/jpeg", "image/png"];
+    const tiposPermitidos = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
     if (!tiposPermitidos.includes(file.mimetype)) {
-      return cb(new Error("Apenas imagens JPEG e PNG são permitidas."));
+      return cb(new Error("Apenas imagens (JPEG, PNG, WEBP) são permitidas."));
     }
     cb(null, true);
   },
@@ -32,14 +32,10 @@ const processarImagem = async (req, res, next) => {
 
   if (capa && typeof capa === "string") {
     // REGRA DE OURO: Só passa se for um link da web OU o nosso caminho oficial do sistema
-    const ehLinkValido = capa.startsWith("http://") || capa.startsWith("https://");
-    const ehCaminhoLocal = capa.startsWith("/api/uploads/");
+    const ehLinkExterno = capa.startsWith("http://") || capa.startsWith("https://");
+    const ehCaminhoLocal = capa.startsWith("/uploads/");
 
-    if (ehLinkValido || ehCaminhoLocal) {
-      req.file = {
-        path: capa,
-        pequena: req.body.capaPequena || capa,
-      };
+    if (ehLinkExterno || ehCaminhoLocal) {
       return next();
     } else {
       // Se mandou "blablabla", o segurança barra aqui e devolve Erro 400 na cara!
@@ -47,10 +43,12 @@ const processarImagem = async (req, res, next) => {
     }
   }
 
+  // Edição sem enviar nada (ignora e segue em frente)
   if (!req.file) {
     return res.status(400).json({ erro: "Nenhuma imagem enviada." });
   }
 
+  // Caso de o usuário fezer upload de um ARQUIVO do PC
   try {
     const timestamp = Date.now();
     const nomeArquivo = `${timestamp}-${Math.round(Math.random() * 1e9)}`;
