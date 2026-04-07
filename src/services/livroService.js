@@ -297,12 +297,17 @@ export const verTodosLivros = async (titulo, autor, editora, categoria, pagina =
     isbn: true,
     qtdCopias: true,
     qtdDisponivel: true,
+    edicao: true,
     autor: true,
     editora: true,
     categoria: true,
     capaPequena: true,
     estante: true,
     prateleira: true,
+
+    _count: {
+      select: { emprestimos: true }, // Conta todos os registos de empréstimos associados a este livro
+    },
   };
 
   const [livros, contador, agregacao] = await prisma.$transaction([
@@ -325,11 +330,18 @@ export const verTodosLivros = async (titulo, autor, editora, categoria, pagina =
     }),
   ]);
 
-  const livrosFormatado = livros.map((l) => ({
-    ...l,
-    isbn: formatarISBN(l.isbn),
-    edicao: `${l.edicao}°`,
-  }));
+  const livrosFormatado = livros.map((l) => {
+    // Retiramos o objeto _count para não enviar "lixo" para o Front-end
+    const { _count, ...restoDoLivro } = l;
+
+    return {
+      ...restoDoLivro,
+      isbn: formatarISBN(l.isbn),
+      edicao: `${l.edicao}°`, // Agora vai aparecer corretamente "1°", "2°", etc.
+      // Extrai o número do contador do Prisma e envia com a chave que o Front-end espera:
+      totalEmprestimos: _count?.emprestimos || _count?.emprestimo || 0,
+    };
+  });
 
   return {
     livros: livrosFormatado,
