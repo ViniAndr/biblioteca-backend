@@ -262,7 +262,7 @@ export const devolucao = async (emprestimoId, estadoDevolucao) => {
 };
 
 export const renovarEmprestimo = async (emprestimoId) => {
-  // Id do emprestimo já vem valdiado pelo middleware
+  // Id do emprestimo já vem validado pelo middleware
   const emprestimo = await buscarEmprestimoPorStatus(emprestimoId, [
     EMPRESTIMO_STATUS.EMPRESTADO,
     EMPRESTIMO_STATUS.ATRASADO,
@@ -277,22 +277,30 @@ export const renovarEmprestimo = async (emprestimoId) => {
   // Datas de renovação
   const hoje = new Date();
   const prazoDevolucao = emprestimo.prazoDevolucao;
+
+  // Define que a renovação só abre 2 dias antes do vencimento (uma janela de 3 dias)
   const aberturaRenovacao = addDays(prazoDevolucao, -2);
 
-  if (isBefore(hoje, aberturaRenovacao) || isAfter(hoje, prazoDevolucao)) {
-    throw new AppError(
-      `Renovação só permitida entre ${formatarData(aberturaRenovacao)} e ${formatarData(prazoDevolucao)}`,
-      400,
-    );
+  // REGRA 1: Impede que o cliente renove muito tempo antes do prazo
+  if (isBefore(hoje, aberturaRenovacao)) {
+    throw new AppError(`Renovação muito antecipada. Só permitida a partir de ${formatarData(aberturaRenovacao)}`, 400);
   }
+  // (Nota: Removi o isAfter para PERMITIR que os atrasados passem por aqui)
+
+  // REGRA 2: Cálculo inteligente da nova data
+  // Se estiver atrasado, os 3 dias extras contam a partir de HOJE.
+  // Se não estiver atrasado, conta a partir do prazo original (para o cliente não perder dias pagos).
+  const dataBaseCalculo = isAfter(hoje, prazoDevolucao) ? hoje : prazoDevolucao;
 
   const renovacao = await prisma.emprestimo.update({
     where: { id: emprestimoId },
     data: {
-      prazoDevolucao: calcularDataDevolucao(3, emprestimo.prazoDevolucao),
+      status: EMPRESTIMO_STATUS.EMPRESTADO, // A MÁGICA AQUI: Limpa o status de Atrasado e volta ao normal!
+      prazoDevolucao: calcularDataDevolucao(3, dataBaseCalculo), // Usa a data base inteligente
       renovacoes: { increment: 1 },
     },
     select: {
+      status: true,
       prazoDevolucao: true,
       renovacoes: true,
     },
