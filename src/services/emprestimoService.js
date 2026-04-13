@@ -295,9 +295,10 @@ export const renovarEmprestimo = async (emprestimoId) => {
   const renovacao = await prisma.emprestimo.update({
     where: { id: emprestimoId },
     data: {
-      status: EMPRESTIMO_STATUS.EMPRESTADO, // A MÁGICA AQUI: Limpa o status de Atrasado e volta ao normal!
+      status: EMPRESTIMO_STATUS.EMPRESTADO, //  Limpa o status de Atrasado e volta ao normal!
       prazoDevolucao: calcularDataDevolucao(3, dataBaseCalculo), // Usa a data base inteligente
       renovacoes: { increment: 1 },
+      ultimaRenovacao: hoje,
     },
     select: {
       status: true,
@@ -411,6 +412,8 @@ export const obterEmprestimo = async (id, clienteId) => {
     estadoDevolucao: true,
     dataCancelamento: true,
     renovacoes: true,
+    qtdAtrasos: true,
+    ultimaRenovacao: true,
     funcionario: {
       select: {
         id: true,
@@ -467,6 +470,7 @@ export const obterEmprestimo = async (id, clienteId) => {
   emprestimo.dataDevolucao = emprestimo.dataDevolucao ? formatarData(emprestimo.dataDevolucao) : "Aguardando";
   emprestimo.estadoDevolucao = emprestimo.estadoDevolucao || "Aguardando";
   emprestimo.dataCancelamento = emprestimo.dataCancelamento ? formatarData(emprestimo.dataCancelamento) : "Aguardando";
+  emprestimo.ultimaRenovacao = emprestimo.ultimaRenovacao ? formatarData(emprestimo.ultimaRenovacao) : "Nunca";
   if (emprestimo.cliente) {
     emprestimo.cliente.telefone = formatarTelefoneBR(emprestimo.cliente.telefone);
   }
