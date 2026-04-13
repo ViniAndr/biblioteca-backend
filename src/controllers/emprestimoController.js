@@ -79,11 +79,11 @@ export const renovarEmprestimo = async (req, res, next) => {
 
 export const listarTodos = async (req, res, next) => {
   // Parametros opcionais para FILTROS
-  const { pagina = 1, qtdItensPorPagina = 10, barraDeBusca, status } = req.query;
+  const { pagina = 1, qtdItensPorPagina = 10, barraDeBusca, status, clienteId } = req.query;
   const itensPorPagina = Number(qtdItensPorPagina);
 
   try {
-    const emprestimos = await service.listarEmprestimos(pagina, itensPorPagina, barraDeBusca, status);
+    const emprestimos = await service.listarEmprestimos(pagina, itensPorPagina, barraDeBusca, status, clienteId);
     return res.status(200).json(emprestimos);
   } catch (error) {
     next(error);
