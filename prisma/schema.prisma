@@ -92,6 +92,8 @@ model Emprestimo {
   estadoDevolucao   String? // Relatar como o livro foi devolvido
   dataCancelamento  DateTime?
   renovacoes        Int               @default(0) 
+  qtdAtrasos        Int               @default(0) // a ideia é somar +1 toda vez que o Cron Job pegar esse livro atrasado
+  ultimaRenovacao   DateTime?
 
   // Relacionamento com Cliente
   clienteId       Int
