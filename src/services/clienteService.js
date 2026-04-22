@@ -190,15 +190,12 @@ const prepararDadosAtualizacao = async (clienteAtual, dadosNovos) => {
   const dadosAtualizados = {};
 
   // NOME E SOBRENOME
-  if (dadosNovos.nome && dadosNovos.sobrenome) {
+  if (dadosNovos.nome) {
     const nome = formatarNomeProprio(dadosNovos.nome);
-    const sobrenome = formatarNomeProprio(dadosNovos.sobrenome);
-    const nomeCompleto = juntarNomes(nome, sobrenome);
 
-    if (nomeCompleto.toLowerCase() !== clienteAtual.nome.toLowerCase()) {
+    if (nome.toLowerCase() !== clienteAtual.nome.toLowerCase()) {
       validacao.validarNome(nome);
-      validacao.validarNome(sobrenome);
-      dadosAtualizados.nome = nomeCompleto;
+      dadosAtualizados.nome = nome;
     }
   }
 
